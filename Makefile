@@ -1,0 +1,1 @@
+EXECNAME="ft_nm"
