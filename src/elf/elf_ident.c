@@ -1,0 +1,1 @@
+// placeholder of elf_ident.c

@@ -5,7 +5,6 @@ static void usage( )
     ft_putstr_fd();
 }
 
-
 int main(int argc, char **argv)
 {
     // --  peusdo code

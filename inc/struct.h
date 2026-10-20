@@ -1,21 +1,29 @@
-#include "ft_nm.h"
+#ifndef STRUCT_H
+# define STRUCT_H
 
-typedef struct s_elf32_sys
+/* Structure to hold symbol information */
+typedef struct s_symbol 
 {
-    Elf32_Word     st_name;
-    Elf32_Addr     st_value;
-    Elf32_Word     st_size;
-    unsigned char  st_info;
-    unsigned char  st_other;
-    Elf32_Half     st_shndx;
-}   t_elf32_sys;
+    size_t s_original_index;
 
-typedef struct s_elf64_sys
+    uint64_t s_arch;
+
+    uint64_t s_type;
+    uint64_t s_bind;
+    uint64_t s_shndx;
+    
+    uintptr_t s_addr;
+    char s_name[PATH_MAX];
+    char s_code;
+} t_symbol;
+
+/* Structure to hold file information */
+typedef struct s_file
 {
-    Elf64_Word     st_name;
-    unsigned char  st_info;
-    unsigned char  st_other;
-    Elf64_Half     st_shndx;
-    Elf64_Addr     st_value;
-    Elf64_Xword    st_size;
-} t_elf64_sys;
+	char f_name[PATH_MAX];
+	void *f_data;
+	size_t f_size;
+	uint8_t f_type;
+} t_file;
+
+#endif // STRUCT_H
