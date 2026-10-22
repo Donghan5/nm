@@ -26,4 +26,11 @@ typedef struct s_file
 	uint8_t f_type;
 } t_file;
 
+typedef struct s_section_table
+{
+    const t_file    *file;
+    size_t          offset;
+    size_t          count;
+}   t_section_table;
+
 #endif // STRUCT_H

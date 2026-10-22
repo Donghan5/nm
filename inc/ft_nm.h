@@ -11,6 +11,7 @@
 # include <elf.h>
 # include <limits.h> // for PATH_MAX
 # include <fcntl.h>
+# include <stdbool.h> // for bool type
 
 /* Custom headers */
 # include "struct.h"
