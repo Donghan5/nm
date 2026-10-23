@@ -26,11 +26,19 @@ typedef struct s_file
 	uint8_t f_type;
 } t_file;
 
+/* Section table structure for elf32 and elf64 */
 typedef struct s_section_table
 {
     const t_file    *file;
     size_t          offset;
     size_t          count;
 }   t_section_table;
+
+/** String table structure for symbol types (tables) */
+typedef struct s_string_table
+{
+    const char  *data;
+    size_t      size;
+}   t_string_table;
 
 #endif // STRUCT_H
