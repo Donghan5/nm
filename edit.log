@@ -39,3 +39,161 @@ ELF32 식별·바이트 순서 확인
 응답: 위에 기록된 elf32.c 리뷰를 제공함. 판정 INCORRECT. 구현 소스 수정 없이 컴파일 검사만 수행함.
 사용자: 이 대화 기록 edit.log에 적어줘.
 처리: 기존에 동일한 리뷰 전문이 있어 보존하고, 요청과 기록 날짜를 추가함.
+
+
+======================================================================
+2026-10-23 — 진행 내용 정리 및 최신 symbol 구현 인계
+======================================================================
+이 기록은 대화의 요약이며 원문 전체의 전사는 아니다. 기존 기록은 보존한다.
+
+[작업 원칙]
+- 사용자가 구현 코드를 직접 작성한다. src/inc/libft 구현은 읽기·리뷰·채팅 코드 제안만 수행한다.
+- tests와 Makefile은 직접 수정 가능하다. 테스트 코드·주석·명세서는 영어로 작성한다.
+- 반복된 문제는 원인과 함께 구체적인 수정 코드를 바로 제안한다.
+- 구현을 수정하거나 테스트를 실행하지 않았다면 그 사실을 구분해 기록한다.
+
+[진행 상태]
+1. Day 1 파일 처리 기본 범위 완료.
+   - open → fstat → mmap → close → 사용 → munmap 흐름.
+   - 음수 st_size 거부와 size_t 대입 전 표현 범위 검사.
+   - make test-1: 8 PASS / 0 FAIL / 1 N/A.
+   - 네이티브 플랫폼에서는 비음수 off_t 전체가 size_t에 들어가 초과 입력을 표현할 수 없다.
+   - make test-1-32: -m32와 _FILE_OFFSET_BITS=64로 size_t 32비트, off_t 64비트 구성.
+   - 사용자 실행 결과 3 PASS. 초과 입력 SIZE_MAX + 1의 거부를 실제 검사했다.
+   - 학교 sudo 불가 환경에서도 기본 테스트는 독립 실행 가능하다.
+2. Day 2 주요 헤더/테이블 처리 구현 및 통합 검사 통과.
+   - ELF32/ELF64 little-endian x86 식별, 헤더 필드와 테이블 범위 검사.
+   - Program 확장 개수: PN_XNUM이면 섹션 0번 sh_info에서 읽는다.
+   - Section 확장 개수: e_shoff != 0 && e_shnum == 0이면 섹션 0번 sh_size에서 읽는다.
+   - e_shoff == 0 && e_shnum == 0은 유효한 테이블 없음이다.
+   - 일반·확장 실제 개수 결정 후 곱셈 overflow 및 전체 파일 범위를 검사한다.
+   - ELF64 offset/sh_size는 size_t로 축소되기 전에 표현 가능 여부를 검사한다.
+   - make test-2: 앞선 에이전트 실행 결과 61 PASS / 0 FAIL, ASan·UBSan 활성화.
+   - 이 테스트는 합성 fixture로 두 ELF 파일 형식을 검사한 것이며 32비트 실행 ABI 검증과는 다르다.
+   - 개별 section payload 범위, SHT_NOBITS, 실제 바이너리/nm 출력 비교 등은 남아 있다.
+   - milestone.md와 tests/DAY2.md에 완료 범위와 미검증 범위를 기록했다.
+3. 현재 Day 3 심볼·문자열 테이블 연결 작업을 시작했다.
+   - symbol_collect.c는 placeholder이며 symbol_type.c를 작성 중이다.
+   - 최신 symbol_type.c 리뷰에서는 컴파일 실패를 확인했다. 해당 이후 수정 여부는 재확인 필요.
+
+[반환값과 API 설계]
+- check_*와 reader: bool 유효 true / 무효 false.
+- elf_ident.c 공통 식별/범위 함수는 현재 int 1/0 의미로 유지. bool 변경 시 정의·선언·테스트를 함께 변경한다.
+- get_*: 성공 0 / 실패 -1. 실패 시 출력값을 사용하지 않는다.
+- 파일 API와 main 등은 반환 역할을 구분한다. fd 0도 유효하며 main 정상 종료는 0이다.
+- ELF32/64 내부 보조 검사는 static. getter와 reader는 공개한다.
+- 직접 구조체 포인터 반환 방식 대신 방법 2(검사 후 지역 구조체로 복사)를 선택했다.
+- memcpy는 원본 주소의 정렬 문제를 피하지만 endian을 변환하지 않는다.
+
+typedef struct s_section_table
+{
+    const t_file *file;
+    size_t offset;
+    size_t count;
+} t_section_table;
+
+int get_elf32_section_table(const t_file *file, t_section_table *table);
+int get_elf64_section_table(const t_file *file, t_section_table *table);
+bool read_elf32_section(const t_section_table *table, size_t index, Elf32_Shdr *section);
+bool read_elf64_section(const t_section_table *table, size_t index, Elf64_Shdr *section);
+
+- table.count가 기존 num_entries 출력 인자의 역할을 한다.
+- getter 성공은 섹션 헤더 목록을 읽을 수 있음을 보장한다. 개별 섹션 payload와 문자열까지 검증했다는 뜻은 아니다.
+- reader는 index, 곱셈, 전체 범위를 검사한 후 항목 하나를 복사한다.
+- table.file과 원본 매핑은 사용하는 동안 유효해야 한다. reader 출력은 쓰기 가능한 지역 구조체로 전달한다.
+
+======================================================================
+최신 symbol 논의 — 우선 이 부분에서 이어갈 것
+======================================================================
+
+[사용자 확인]
+사용자: "일단 1번부터 진행을 하고 싶은데, t_symbol같은 경우 공통 레코드임.
+여기서 read_elf32_section, read_elf64_section을 활용한다는 거는 정확하게 어떤 의미지?"
+
+결정: t_symbol은 ELF 원본 엔트리가 아니라 공통 결과 레코드다.
+심볼 테이블을 찾는 단계에서 t_symbol을 억지로 사용하지 않는다.
+
+[각 타입의 역할]
+- t_file: 원본 파일의 매핑 주소와 크기.
+- t_section_table: 검증된 섹션 목록의 파일·시작 offset·실제 개수.
+- Elf32_Shdr / Elf64_Shdr: 섹션 하나의 메타데이터. 심볼/문자열 테이블 위치를 찾는 정보.
+- Elf32_Sym / Elf64_Sym: 파일에서 읽는 원본 심볼 엔트리.
+- t_symbol: 원본에서 추출한 이름·값·binding/type·section index 등을 담는 공통 결과.
+
+[최신 symbol_type.c 리뷰에서 발견한 문제]
+1. 현재 구조체에 없는 필드를 사용해 컴파일되지 않는다.
+   sym->shdr, sym->st_name, elf->ehdr, elf->shdr와 t_shdr는 정의돼 있지 않다.
+   이 필드를 전부 추가하는 방식으로 해결하기보다 기존 getter/reader를 활용한다.
+   st_name은 원본 Elf32_Sym/Elf64_Sym의 필드다. t_symbol의 이름 결과와 혼동하지 않는다.
+2. 섹션 헤더를 읽었다고 섹션 데이터까지 안전한 것은 아니다.
+   심볼/문자열 데이터에 접근하기 전 sh_offset/sh_size의 전체 파일 범위를 확인한다.
+   ELF64 값은 size_t로 변환하기 전에 표현 범위를 검사한다.
+3. st_name < strtab.sh_size만으로는 안전한 문자열이 보장되지 않는다.
+   문자열 테이블 자체의 payload 범위, 이름 offset, 이름부터 테이블 끝 사이의 NUL 종료를 모두 검사한다.
+   마지막 바이트가 'A'이고 NUL이 없으면 offset 검사는 통과해도 strlen/출력에서 범위를 벗어날 수 있다.
+4. 심볼 테이블 크기는 엔트리 크기로 나누어떨어져야 한다.
+   먼저 sh_entsize == sizeof(Elf32_Sym) 또는 sizeof(Elf64_Sym)을 확인하고,
+   sh_size % sh_entsize == 0을 확인한 뒤 개수를 계산한다.
+   단순 정수 나눗셈과 entry_count > 0만으로는 잘린 엔트리를 거부하지 못한다.
+5. 현재 get_sym_type/check_sym_type/check_sym_name_range는 문자열 연결 검사가 중복된다.
+   현재 작성 중인 로직은 Day 3의 수집·검증이다.
+   T/t, D/d, B/b, U 등 출력 문자 판정은 Day 4 symbol_type 역할로 분리할 수 있다.
+   이를 위해 지금 구현을 버릴 필요는 없으며 먼저 역할과 입력 타입을 정한다.
+6. sh_link는 offset이 아니라 연결된 섹션 index다.
+   e_shnum 원시값보다 getter가 해결한 table.count를 사용해야 확장 개수도 처리된다.
+
+[reader 활용의 정확한 의미]
+기존 코드의 다음 접근은 현재 설계에 존재하지 않는다.
+
+    sym->shdr->sh_link
+    elf->shdr[index]
+
+대신 section table getter로 위치/개수를 얻고, reader로 지정한 index의
+섹션 헤더를 지역 변수에 복사한다. 예시는 전체 구현이 아니라 연결 흐름이다.
+
+    t_section_table table;
+    Elf32_Shdr symtab;
+    Elf32_Shdr strtab;
+
+    if (get_elf32_section_table(file, &table) < 0)
+        return (-1);
+
+    /* 이 코드는 index < table.count로 순회하는 문맥 안에 둔다. */
+    if (!read_elf32_section(&table, index, &symtab))
+        return (-1);
+
+    if (symtab.sh_type != SHT_SYMTAB)
+    {
+        /* 다음 섹션으로 이동한다. strtab 연결 단계로 진행하지 않는다. */
+        continue;
+    }
+
+    if (!read_elf32_section(&table, symtab.sh_link, &strtab))
+        return (-1);
+    if (strtab.sh_type != SHT_STRTAB)
+        return (-1);
+
+reader가 index 범위를 검사하므로 잘못된 sh_link도 거부한다.
+그 다음 두 섹션의 payload 범위 검증, 원본 심볼 엔트리 읽기,
+st_name과 문자열 NUL 종료 검증을 수행한다.
+
+ELF64는 같은 흐름에서 Elf64_Shdr와 read_elf64_section을 사용한다.
+아직 이 단계에서 t_symbol은 필요하지 않다.
+원본 심볼을 안전하게 읽고 이름까지 연결한 다음 t_symbol을 채운다.
+
+[다음 구현 순서]
+1. 파일/테이블을 입력으로 섹션 목록을 순회한다.
+2. sh_type == SHT_SYMTAB인 섹션을 찾는다. 이름으로 찾지 않는다.
+3. sh_link를 reader의 index로 사용해 연결된 섹션을 읽는다.
+4. 연결 섹션이 SHT_STRTAB인지 확인한다.
+5. 심볼·문자열 테이블 payload 범위를 검증한다.
+6. 엔트리 크기·나머지·개수를 검증한다.
+7. Elf32_Sym/Elf64_Sym을 복사해서 읽는다.
+8. st_name 범위와 테이블 내부 NUL 종료를 검증한다.
+9. 공통 t_symbol을 채운다. 이름의 소유권·수명을 정한다.
+10. 분류·정렬·최종 출력은 이후 마일스톤에서 구현한다.
+
+[기록 시점의 검증 한계]
+이 로그 갱신에서는 구현 소스 수정, 테스트 재실행, 새 컴파일 검사를 하지 않았다.
+위 테스트 수치는 앞선 실행 기록이며 최신 symbol 구현의 통과 결과가 아니다.
+최신 symbol_type.c 리뷰는 정의되지 않은 필드/타입과 미사용 인자로 컴파일 실패했다.
