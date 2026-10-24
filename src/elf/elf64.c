@@ -68,7 +68,6 @@ static bool check_elf64_header_fields(const t_file *elf)
     return (true);
 }
 
-
 bool read_elf64_section(const t_section_table *table, size_t index, Elf64_Shdr *section)
 {
     const unsigned char *data;
@@ -87,6 +86,61 @@ bool read_elf64_section(const t_section_table *table, size_t index, Elf64_Shdr *
     data = table->file->f_data;
     ft_memcpy(section, data + offset, sizeof(*section));
     return (true);
+}
+
+bool read_elf64_symbol(const t_file *file, const Elf64_Shdr *symtab, size_t sym_index, Elf64_Sym *sym)
+{
+    const unsigned char *data;
+    size_t offset;
+
+    if (!file || !symtab || !sym || !file->f_data)
+        return (false);
+    if (symtab->sh_type != SHT_SYMTAB)
+        return (false);
+    if (symtab->sh_entsize != sizeof(*sym))
+        return (false);
+    if (symtab->sh_size % sizeof(*sym) != 0)
+        return (false);
+    if (sym_index >= symtab->sh_size / sizeof(Elf64_Sym))
+        return (false);
+    if (symtab->sh_offset > SIZE_MAX || symtab->sh_size > SIZE_MAX)
+        return (false);
+    if (!check_common_range(file, (size_t)symtab->sh_offset, symtab->sh_size))
+        return (false);
+
+    offset = symtab->sh_offset + sym_index * sizeof(Elf64_Sym);
+    data = file->f_data;
+    ft_memcpy(sym, data + offset, sizeof(*sym));
+    return (true);
+}
+
+const char  *get_elf64_string(const t_file *elf, const Elf64_Shdr *strtab, size_t name_offset)
+{
+    const char *data;
+    size_t size;
+    size_t i;
+
+    if (!elf || !strtab || !elf->f_data)
+        return (NULL);
+    if (strtab->sh_type != SHT_STRTAB)
+        return (NULL);
+    if (strtab->sh_offset > SIZE_MAX || strtab->sh_size > SIZE_MAX)
+        return (NULL);
+    
+    size = strtab->sh_size;
+    if (!check_common_range(elf, (size_t)strtab->sh_offset, size))
+        return (NULL);
+    if (name_offset >= size)
+        return (NULL);
+    data = (const char *)elf->f_data + strtab->sh_offset;
+    i = name_offset;
+    while (i < size)
+    {
+        if (data[i] == '\0')
+            return (data + name_offset);
+        i++;
+    }
+    return (NULL);
 }
 
 /* Success return 0, failure return -1 */

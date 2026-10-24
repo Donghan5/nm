@@ -8,7 +8,7 @@ int get_sym_type_32(t_file *elf)
     Elf32_Shdr strtab;
     size_t  index;
     
-    if (get_elf32_section_table(file, &table) < 0)
+    if (get_elf32_section_table(elf, &table) < 0)
         return (-1);
 
     index = 0;
@@ -36,7 +36,7 @@ int get_sym_type_64(t_file *elf)
     Elf64_Shdr strtab;
     size_t  index;
     
-    if (get_elf64_section_table(file, &table) < 0)
+    if (get_elf64_section_table(elf, &table) < 0)
         return (-1);
 
     index = 0;
@@ -79,6 +79,9 @@ bool check_sym_type_32(const t_file *elf, const Elf32_Shdr *symtab, const Elf32_
 bool check_sym_type_64(const t_file *elf, const Elf64_Shdr *symtab, const Elf64_Shdr *strtab)
 {
     if (symtab->sh_type != SHT_SYMTAB || strtab->sh_type != SHT_STRTAB)
+        return (false);
+    if (symtab->sh_offset > SIZE_MAX || symtab->sh_size > SIZE_MAX \
+        || strtab->sh_offset > SIZE_MAX || strtab->sh_size > SIZE_MAX)
         return (false);
     if (!check_common_range(elf, symtab->sh_offset, symtab->sh_size) \
         || !check_common_range(elf, strtab->sh_offset, strtab->sh_size))

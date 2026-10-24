@@ -12,7 +12,7 @@ typedef struct s_symbol
     uint64_t s_bind;
     uint64_t s_shndx;
     
-    uintptr_t s_addr;
+    uint64_t s_addr;
     char s_name[PATH_MAX];
     char s_code;
 } t_symbol;

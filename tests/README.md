@@ -1,5 +1,9 @@
 # Day 1 File Handling Tests
 
+Day 2: run `make test-2`; see [DAY2.md](DAY2.md).
+
+Day 3: run `make test-3`; see [DAY3.md](DAY3.md) for symbol collection coverage and limitations.
+
 ## Dedicated 32-bit conversion suite
 
 Run `make test-1-32` to build with `-m32 -D_FILE_OFFSET_BITS=64` and run only the three size boundary cases. This exercises the actual implementation with 32-bit size_t and 64-bit off_t, including rejection of 4,294,967,296 (SIZE_MAX + 1). It reuses the existing C harness and wraps fstat64. No large file is created. All three cases must pass; an N/A result is a failure in this mode.

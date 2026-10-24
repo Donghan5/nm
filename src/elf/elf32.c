@@ -88,6 +88,55 @@ bool read_elf32_section(const t_section_table *table, size_t index, Elf32_Shdr *
     return (true);
 }
 
+const char  *get_elf32_string(const t_file *elf, const Elf32_Shdr *strtab, size_t name_offset)
+{
+    const char *data;
+    size_t i;
+
+    if (!elf || !strtab || !elf->f_data)
+        return (NULL);
+    if (strtab->sh_type != SHT_STRTAB)
+        return (NULL);
+    if (!check_common_range(elf, (size_t)strtab->sh_offset, strtab->sh_size))
+        return (NULL);
+    if (name_offset >= strtab->sh_size)
+        return (NULL);
+
+    data = (const char *)elf->f_data + strtab->sh_offset;
+    i = name_offset;
+    while (i < strtab->sh_size)
+    {
+        if (data[i] == '\0')
+            return (data + name_offset);
+        i++;
+    }
+    return (NULL);
+}
+
+bool read_elf32_symbol(const t_file *file, const Elf32_Shdr *symtab, size_t sym_index, Elf32_Sym *sym)
+{
+    const unsigned char *data;
+    size_t offset;
+
+    if (!file || !symtab || !sym || !file->f_data)
+        return (false);
+    if (symtab->sh_type != SHT_SYMTAB)
+        return (false);
+    if (symtab->sh_entsize != sizeof(*sym))
+        return (false);
+    if (symtab->sh_size % sizeof(*sym) != 0)
+        return (false);
+    if (sym_index >= symtab->sh_size / sizeof(Elf32_Sym))
+        return (false);
+    if (!check_common_range(file, (size_t)symtab->sh_offset, symtab->sh_size))
+        return (false);
+
+    offset = symtab->sh_offset + sym_index * sizeof(Elf32_Sym);
+    data = file->f_data;
+    ft_memcpy(sym, data + offset, sizeof(*sym));
+    return (true);
+}
+
 /* Success return 0, failure return -1 */
 int get_elf32_section_table(const t_file *elf, t_section_table *section_table)
 {

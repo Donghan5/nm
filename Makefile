@@ -44,8 +44,11 @@ test-1-32:
 test-2:
 	CC="$(CC)" bash tests/test_day2.sh
 
+test-3:
+	CC="$(CC)" bash tests/test_day3.sh
+
 FORCE:
 
 -include $(DEPS)
 
-.PHONY: all clean fclean re test-1 test-1-32 test-2 FORCE
+.PHONY: all clean fclean re test-1 test-1-32 test-2 test-3 FORCE
