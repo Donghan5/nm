@@ -1,112 +1,115 @@
 #include "../../inc/ft_nm.h"
 
-// getting section character by 32 / 64 reader
-char get_section_character_32(const t_file *file, const Elf32_Shdr *section)
+// input t_symbol -> special input like weak -> s_shndx --> UNDEF / ABS / COMMON
+    // -> 32/64 render in general index -> decide default char with sh_type, sh_flag
+    // -> local or global in general (T, D, B, R, A)
+
+void    set_symbol_type_by_shndx(t_symbol *symbol, t_section_table *section)
 {
-    if (!file || !section)
-        return ('\0');
-    if (section->sh_flags & SHF_EXECINSTR)
+    if (symbol->shndx == STB_WEAK)
+        check_and_set_weak_symbol(symbol, section);
+    else if (symbol->shndx == SHN_UNDEF)
+        symbol->type = 'U';
+    else if (symbol->shndx == SHN_ABS) // absolute symbol verify upper case and lower case
     {
-        if (/* global symbol */)
-            return ('T');
+        if (symbol->bind == STB_LOCAL)
+            symbol->type = 'a';
         else
-            return ('t');
-    }
-    if (section->sh_flags & SHF_WRITE)
-    {
-        if (/* global symbol */)
-            return ('D');
-        else
-            return ('d');
-    }
-    if (section->sh_flags & SHF_ALLOC)
-    {
-        if (/* global symbol */)
-            return ('B');
-        else
-            return ('b');
-    }
-    if (section->sh_type == SHT_REL)
-    {
-        if (/* global symbol */)
-            return ('R');
-        else
-            return ('r');
-    }
-    if (section->sh_type == /* undefined section */)
-        return ('U');
-    if (section->sh_type == /* absolute section */)
-    {
-        if (/* global symbol */)
-            return ('A');
-        else
-            return ('a');
-    }
-    if (section->sh_type == /* common section */)
-        return ('C');
-    return ('\0');
+            symbol->type = 'A';
+    }    
+    else if (symbol->shndx == SHN_COMMON)
+        symbol->type = 'C';
+    else
+        set_symbol_type_by_section(symbol, section);
 }
 
-char get_section_character_64(const t_file *file, const Elf64_Shdr *section)
+void    check_and_set_weak_symbol(t_symbol *symbol, t_section_table *section)
 {
-    if (!file || !section)
-        return ('\0');
-    if (/* Code Section */)
+    if (symbol->sh_type == STT_OBJECT)
     {
-        if (/* global symbol */)
-            return ('T');
+        if (symbol->sh_shndx == SHN_UNDEF)
+            symbol->type = 'v';
         else
-            return ('t');
+            symbol->type = 'V';
     }
-    if (/* Data Section (initialized)*/)
+    else if (symbol->sh_type == STT_FUNC)
     {
-        if (/* global symbol */)
-            return ('D');
+        if (symbol->sh_shndx == SHN_UNDEF)
+            symbol->type = 'w';
         else
-            return ('d');
+        symbol->type = 'W';
     }
-    if (/* BSS Section */)
-    {
-        if (/* global symbol */)
-            return ('B');
-        else
-            return ('b');
-    }
-    if (/* Read only Section */)
-    {
-        if (/* global symbol */)
-            return ('R');
-        else
-            return ('r');
-    }
-    if (/* undefined section */)
-        return ('U');
-    if (/* absolute section */)
-    {
-        if (/* global symbol */)
-            return ('A');
-        else
-            return ('a');
-    }
-    if (/* common section */)
-        return ('C');
-    return ('\0');
 }
 
-// Special symbol like weak
-bool is_special_symbol(uint64_t type, uint64_t bind)
+void    set_symbol_type_by_section(t_symbol *symbol, t_section_table *section)
 {
-    if (type == STT_NOTYPE && bind == STB_WEAK)
-        return (true);
-    if (type == STT_OBJECT && bind == STB_WEAK)
-        return (true);
-    return (false);
+    // check section type and flag to determine symbol type T, D, B, R
+    if (symbol->sh_type == SHT_NOBITS && symbol->sh_flags == (SHF_ALLOC | SHF_WRITE))
+    {
+        if (symbol->bind == STB_LOCAL)
+            symbol->type = 'b';
+        else
+            symbol->type = 'B';
+    }
+    
+    if (symbol->sh_type == SHT_PROGBITS && symbol->sh_flags == (SHF_ALLOC | SHF_WRITE))
+    {
+        if (symbol->bind == STB_LOCAL)
+            symbol->type = 'd';
+        else
+            symbol->type = 'D';
+    }
+
+    if (symbol->sh_type == SHT_PROGBITS && symbol->sh_flags == SHF_ALLOC)
+    {
+        if (symbol->bind == STB_LOCAL)
+            symbol->type = 'r';
+        else
+            symbol->type = 'R';
+    }
+
+    if (symbol->sh_type == SHT_PROGBITS && symbol->sh_flags == (SHF_ALLOC | SHF_EXECINSTR))
+    {
+        if (symbol->bind == STB_LOCAL)
+            symbol->type = 't';
+        else
+            symbol->type = 'T';
+    }
 }
 
-// Special section index: undefined, absolute, common (have to add?)
+bool    get_symbol_section_info(const t_symbol *symbol, const t_section_table *section, uint32_t *type, uint64_t *flags)
+{
+    Elf32_Shdr section32;
+    Elf64_Shdr section64;
 
-// general section: executable writable nobits
+    if (symbol->s_arch == 32)
+    {
+        if (!read_elf32_section(table, symbol->s_shndx, &section32))
+            return (false);
+        *type = section32.sh_type;
+        *flags = section32.sh_flags;
+    }
+    else if (symbol->s_arch == 64)
+    {
+        if (!read_elf64_section(table, symbol->s_shndx, &section64))
+            return (false);
+        *type = section64.sh_type;
+        *flags = section64.sh_flags;
+    }
+    else
+        return (false);
+    return (true);
+}
 
-// local / global
+int symbol_type(t_symbol *symbol, t_section_table *section)
+{
+    uint32_t type;
+    uint64_t flags;
 
-// main entrance for this file
+    if (!get_symbol_section_info(symbol, section, &type, &flags))
+        return (-1);
+    symbol->sh_type = type;
+    symbol->sh_flags = flags;
+    set_symbol_type_by_shndx(symbol, section);
+    return (0);
+}

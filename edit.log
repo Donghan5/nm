@@ -245,3 +245,117 @@ return (return_false_with_free(symbols, count));
 [검증 범위]
 직전 리뷰는 코드 읽기만 수행했다. 구현 수정, 컴파일·런타임 검사는 하지 않았다.
 이번 작업은 사용자 요청에 따라 기존 기록을 보존하고 이 한국어 요약만 추가한다.
+
+======================================================================
+2026-10-25 — symbol_type.c 리뷰 및 32/64비트 섹션 정보 공통화
+======================================================================
+[1. 인자 타입과 필드]
+인자를 t_symbol *로 변경한 것은 올바르다. 실제 구조체 필드에 맞게 다음도 변경한다.
+- shndx -> s_shndx: 심볼이 속한 섹션 번호
+- sh_info -> s_bind: STB_LOCAL / STB_GLOBAL / STB_WEAK
+- 심볼 종류를 검사하는 sh_type -> s_type: STT_OBJECT / STT_FUNC 등
+- 출력 문자 저장용 type -> s_code
+단, SHT_*와 비교하는 sh_type은 심볼 필드가 아니라 실제 섹션 헤더에서 읽어야 한다.
+t_symbol에는 sh_flags가 없다. 섹션 헤더의 sh_flags를 사용한다.
+
+[2. weak 판정과 대소문자]
+weak 검사는 s_bind == STB_WEAK로 수행한다.
+weak 분기 안에서 STB_GLOBAL을 검사하면 항상 거짓이다.
+weak 검사를 SHN_UNDEF 분기 안에서만 호출하면 정의된 weak 심볼을 놓친다.
+STT_OBJECT이면 V/v, 그 외에는 W/w로 분류한다. STT_NOTYPE도 처리해야 한다.
+weak의 대소문자는 binding이 아니라 정의 여부로 결정한다.
+- s_shndx == SHN_UNDEF: 정의 없음 -> v 또는 w
+- 그 외: 정의 있음 -> V 또는 W
+일반적인 t/T, d/D 등의 LOCAL/GLOBAL 구분과 weak의 대소문자 기준은 다르다.
+
+제안한 weak 처리 예시:
+void check_and_set_weak_symbol(t_symbol *symbol)
+{
+    if (symbol->s_type == STT_OBJECT)
+    {
+        if (symbol->s_shndx == SHN_UNDEF)
+            symbol->s_code = 'v';
+        else
+            symbol->s_code = 'V';
+    }
+    else
+    {
+        if (symbol->s_shndx == SHN_UNDEF)
+            symbol->s_code = 'w';
+        else
+            symbol->s_code = 'W';
+    }
+}
+
+진입점의 권장 순서:
+1. STB_WEAK이면 weak 처리 후 종료
+2. SHN_UNDEF이면 U
+3. SHN_ABS이면 A
+4. SHN_COMMON이면 C
+5. 일반 섹션 번호이면 실제 섹션 정보를 읽어 분류
+6. 일반 분류 A/B/D/R/T 등은 STB_LOCAL이면 소문자로 변환
+weak의 V/v, W/w에는 일반 LOCAL 소문자 변환을 적용하지 않는다.
+
+[3. 심볼 타입과 섹션 타입 구분]
+s_type은 이름이 무엇인지 나타낸다(STT_FUNC, STT_OBJECT 등).
+섹션의 sh_type과 sh_flags는 그 이름이 속한 공간의 성격을 나타낸다.
+예: 초기화된 변수와 BSS 변수는 둘 다 STT_OBJECT여도 보통 D와 B로 달리 표시된다.
+따라서 s_type만으로 B/R/D/T를 결정할 수 없다.
+s_shndx를 사용해 실제 섹션 헤더를 읽은 뒤 sh_type, sh_flags로 판정한다.
+
+[4. 32/64 render in general index의 구현 방향]
+새로운 공통 index를 만들 필요는 없다. 섹션 번호는 이미 s_shndx에 있다.
+공통화할 대상은 그 번호로 읽은 섹션의 타입과 플래그이다.
+심볼 수집에서 Elf32_Sym/Elf64_Sym을 t_symbol로 통일한 것과 같은 방식이다.
+- s_arch로 32/64비트 읽기 함수를 선택한다.
+- s_shndx로 해당 섹션을 읽는다.
+- sh_type은 uint32_t, sh_flags는 uint64_t 공통 변수에 저장한다.
+- 32비트 플래그도 uint64_t에 손실 없이 저장할 수 있다.
+- 이후 문자 판정에서는 32/64 구분이 필요 없다.
+
+제안한 공통 정보 추출 함수 예시:
+bool get_symbol_section_info(
+    const t_symbol *symbol,
+    const t_section_table *table,
+    uint32_t *type,
+    uint64_t *flags)
+{
+    Elf32_Shdr section32;
+    Elf64_Shdr section64;
+
+    if (symbol->s_arch == 32)
+    {
+        if (!read_elf32_section(table, symbol->s_shndx, &section32))
+            return (false);
+        *type = section32.sh_type;
+        *flags = section32.sh_flags;
+    }
+    else if (symbol->s_arch == 64)
+    {
+        if (!read_elf64_section(table, symbol->s_shndx, &section64))
+            return (false);
+        *type = section64.sh_type;
+        *flags = section64.sh_flags;
+    }
+    else
+        return (false);
+    return (true);
+}
+
+이 함수는 UNDEF/ABS/COMMON 처리가 끝난 일반 섹션 번호에 대해서만 호출한다.
+호출자는 읽기 실패를 전달할 수 있도록 bool 반환형 등을 고려한다.
+
+[5. 플래그 검사와 local 처리]
+sh_flags는 여러 속성이 함께 설정되는 비트 묶음이다.
+flags == (SHF_ALLOC | SHF_WRITE)는 다른 속성이 없을 때만 참이다.
+필요한 두 속성이 모두 있는지 확인하려면 다음처럼 검사한다.
+(flags & (SHF_ALLOC | SHF_WRITE)) == (SHF_ALLOC | SHF_WRITE)
+한 속성의 존재 여부는 (flags & SHF_EXECINSTR) != 0처럼 검사한다.
+읽기 전용 분류는 ALLOC 존재만으로 결정하지 않고 WRITE/EXECINSTR 여부도 고려한다.
+각 분류에서 필요한 속성과 없어야 하는 속성을 구분해야 한다.
+일반 심볼은 섹션으로 기본 문자(D 등)를 정한 뒤 STB_LOCAL이면 소문자(d 등)로 바꾼다.
+
+[검증 범위]
+이 기록은 대화에서 수행한 코드 리뷰와 구현 제안의 요약이다.
+symbol_type.c 구현은 수정하지 않았으며 컴파일 및 런타임 테스트는 수행하지 않았다.
+위 예시는 전체 GNU nm 분류 규칙을 완성한 구현이 아니다.
