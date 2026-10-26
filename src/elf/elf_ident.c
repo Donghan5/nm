@@ -1,4 +1,4 @@
-#include "../../inc/ft_nm.h"
+#include "ft_nm.h"
 
 // return 1 if the range is valid, 0 otherwise
 int check_common_range(const t_file *elf, size_t offset, size_t size)

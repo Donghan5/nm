@@ -1,6 +1,6 @@
-#include "../inc/ft_nm.h"
+#include "ft_nm.h"
 
-static void	init_file(t_file *file)
+void	init_file(t_file *file)
 {
 	file->f_name[0] = '\0';
 	file->f_data = NULL;
@@ -68,7 +68,7 @@ int	handle_file(const char *filename, t_file *file)
 		return (close_file_error(fd));
 	if (map_file(fd, file) < 0)
 		return (close_file_error(fd));
-	ft_strlcpy(file->f_name, filename, PATH_MAX);
+	strlcpy(file->f_name, filename, PATH_MAX);
 	close(fd);
 	return (0);
 }

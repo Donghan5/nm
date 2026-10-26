@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 
-ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 TASK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/ft-nm-day1.XXXXXX")
 trap 'rm -rf -- "$TASK_TMP"' EXIT
 export LC_ALL=C
@@ -14,10 +14,10 @@ if [ "$mode" = 32 ]; then
     # Keep the conversion-only suite independent of 32-bit sanitizer runtimes.
     build_flags=(-m32 -D_FILE_OFFSET_BITS=64 -DDAY1_TEST_32 -Wl,--wrap=fstat64)
     if ! "${CC:-cc}" -m32 -D_FILE_OFFSET_BITS=64 \
-        "$ROOT/tests/day1_32_probe.c" -o "$TASK_TMP/probe" \
+        "$ROOT/tests/day1/day1_32_probe.c" -o "$TASK_TMP/probe" \
         > "$TASK_TMP/probe.log" 2>&1; then
         printf 'ENVIRONMENT ERROR: 32-bit compiler/libc support is unavailable; no tests ran.\n'
-        printf 'See tests/README.md for setup requirements.\n'
+        printf 'See tests/day1/README.md for setup requirements.\n'
         cat "$TASK_TMP/probe.log"
         exit 1
     fi
@@ -27,7 +27,7 @@ if [ "$mode" = 32 ]; then
     fi
     printf '32-bit conversion suite: size_t=32 bits, off_t=64 bits (sanitizers disabled)\n'
 elif [ "$mode" != native ]; then
-    printf 'Usage: bash tests/test_day1.sh [native|32]\n' >&2
+    printf 'Usage: bash tests/day1/test_day1.sh [native|32]\n' >&2
     exit 1
 fi
 
@@ -39,7 +39,7 @@ mkdir "$TASK_TMP/directory"
 if ! "${CC:-cc}" -Wall -Wextra -Werror -g -O1 \
     "${build_flags[@]}" \
     -I"$ROOT/inc" -I"$ROOT" \
-    "$ROOT/tests/day1_file_test.c" "$ROOT/src/file.c" \
+    "$ROOT/tests/day1/day1_file_test.c" "$ROOT/src/file.c" \
     "$ROOT/src/utils/error.c" \
     "$ROOT/libft/ft_strlcpy.c" "$ROOT/libft/ft_strlen.c" \
     -o "$TASK_TMP/day1_file_test" > "$TASK_TMP/build.log" 2>&1; then

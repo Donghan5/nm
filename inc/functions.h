@@ -1,6 +1,10 @@
 #ifndef FUNCTOINS_H
 # define FUNCTOINS_H
 
+// file.c
+int	handle_file(const char *filename, t_file *file);
+void cleanup_file(t_file *file);
+
 // error.c
 void	cleanup_and_exit(t_file *file, const char *msg);
 
@@ -24,4 +28,15 @@ bool read_elf64_symbol(const t_file *file, const Elf64_Shdr *symtab, size_t sym_
 bool check_sym_type_32(const t_file *elf, const Elf32_Shdr *symtab, const Elf32_Shdr *strtab);
 bool check_sym_type_64(const t_file *elf, const Elf64_Shdr *symtab, const Elf64_Shdr *strtab);
 
+// symbol_type.c
+int symbol_type(t_symbol *symbol, t_section_table *section);
+
+// symbol_collect.c
+bool get_elf_section(const t_file *file, t_symbol **symbols, size_t *count);
+
+// sort_symbols.c
+void sort_symbols(t_symbol *symbols, size_t count);
+
+// print_symbols.c
+void print_symbols(t_symbol *symbols, size_t count);
 #endif

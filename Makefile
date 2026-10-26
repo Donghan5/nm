@@ -36,19 +36,22 @@ re: fclean
 	$(MAKE) all
 
 test-1:
-	CC="$(CC)" bash tests/test_day1.sh
+	CC="$(CC)" bash tests/day1/test_day1.sh
 
 test-1-32:
-	CC="$(CC)" bash tests/test_day1.sh 32
+	CC="$(CC)" bash tests/day1/test_day1.sh 32
 
 test-2:
-	CC="$(CC)" bash tests/test_day2.sh
+	CC="$(CC)" bash tests/day2/test_day2.sh
 
 test-3:
-	CC="$(CC)" bash tests/test_day3.sh
+	CC="$(CC)" bash tests/day3/test_day3.sh
+
+test-4:
+	CC="$(CC)" DAY4_NM="$(DAY4_NM)" bash tests/day4/test_day4.sh
 
 FORCE:
 
 -include $(DEPS)
 
-.PHONY: all clean fclean re test-1 test-1-32 test-2 test-3 FORCE
+.PHONY: all clean fclean re test-1 test-1-32 test-2 test-3 test-4 FORCE

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -eu
-ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 TASK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/ft-nm-day3.XXXXXX")
 trap 'rm -rf -- "$TASK_TMP"' EXIT
 export LC_ALL=C
@@ -12,7 +12,7 @@ unavailable=0
 for bits in 32 64; do
     if ! "${CC:-cc}" -Wall -Wextra -Werror -g -O1 \
         -fsanitize=address,undefined -fno-omit-frame-pointer -DDAY3_BITS="$bits" \
-        -I"$ROOT/inc" -I"$ROOT" "$ROOT/tests/day3_symbol_test.c" \
+        -I"$ROOT/inc" -I"$ROOT" "$ROOT/tests/day3/day3_symbol_test.c" \
         "$ROOT/src/elf/elf_ident.c" "$ROOT/src/elf/elf32.c" "$ROOT/src/elf/elf64.c" \
         "$ROOT/src/symbol/symbol_collect.c" "$ROOT/src/symbol/symbol_validate.c" \
         "$ROOT/libft/ft_memcpy.c" "$ROOT/libft/ft_strlen.c" \
@@ -35,12 +35,12 @@ for bits in 32 64; do
             failed=$((failed + 1))
         fi
     done
-    if ! "${CC:-cc}" -m"$bits" -fno-lto -fno-pic -c "$ROOT/tests/day3_fixture.c" \
+    if ! "${CC:-cc}" -m"$bits" -fno-lto -fno-pic -c "$ROOT/tests/day3/day3_fixture.c" \
         -o "$TASK_TMP/fixture-$bits.o" > "$TASK_TMP/fixture.log" 2>&1; then
         printf 'UNAVAILABLE: ELF%s real object generation; this check did not run.\n' "$bits"
         cat "$TASK_TMP/fixture.log"
         unavailable=$((unavailable + 1))
-    elif timeout 15s python3 "$ROOT/tests/day3_compare.py" \
+    elif timeout 15s python3 "$ROOT/tests/day3/day3_compare.py" \
         "$TASK_TMP/symbol-$bits" "$TASK_TMP/fixture-$bits.o"; then
         passed=$((passed + 1))
     else

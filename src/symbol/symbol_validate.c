@@ -1,4 +1,4 @@
-#include "../../inc/ft_nm.h"
+#include "ft_nm.h"
 
 // Get the symbol type with SYMSHT_SYMTAB
 int get_sym_type_32(t_file *elf)

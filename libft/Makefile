@@ -23,19 +23,29 @@ BONUS =	ft_lstadd_back.c ft_lstadd_front.c ft_lstclear.c \
 		ft_lstdelone.c ft_lstiter.c ft_lstlast.c \
 		ft_lstmap.c ft_lstnew.c ft_lstsize.c
 
-SRCS = ${LIBC} ${ADDITIONAL}
+PRINTF = ft_printf.c ft_printf_address.c ft_printf_nbr.c ft_printf_strings.c
 
-SRCSALL = ${LIBC} ${ADDITIONAL} ${BONUS}
+SRCS = ${LIBC} ${ADDITIONAL} ${PRINTF}
+
+SRCSALL = ${SRCS} ${BONUS}
 
 OBJS = ${SRCS:.c=.o}
 
 OBJSALL = ${SRCSALL:.c=.o}
 
+PRINTF_OBJS = ${PRINTF:.c=.o}
+
 NAME = libft.a
 
 CC = cc
 
-CFLAGS = -Wall -Werror -Wextra -I.
+CFLAGS = -Wall -Werror -Wextra -I. -I..
+
+all: ${NAME}
+
+${OBJSALL}: libft.h
+
+${PRINTF_OBJS}: ft_printf.h
 
 %.o: %.c
 		${CC} ${CFLAGS} -c $< -o $@
@@ -45,8 +55,6 @@ ${NAME}: ${OBJS}
 
 bonus: ${OBJSALL}
 		ar -rcs ${NAME} ${OBJSALL}
-
-all: ${NAME}
 
 clean:
 		rm -f ${OBJSALL}

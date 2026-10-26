@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -eu
-ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 TASK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/ft-nm-day2.XXXXXX")
 trap 'rm -rf -- "$TASK_TMP"' EXIT
 export LC_ALL=C
@@ -9,7 +9,7 @@ export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
 
 if ! "${CC:-cc}" -Wall -Wextra -Werror -g -O1 \
     -fsanitize=address,undefined -fno-omit-frame-pointer \
-    -I"$ROOT/inc" -I"$ROOT" "$ROOT/tests/day2_elf_test.c" \
+    -I"$ROOT/inc" -I"$ROOT" "$ROOT/tests/day2/day2_elf_test.c" \
     "$ROOT/src/elf/elf_ident.c" -o "$TASK_TMP/day2_elf_test" \
     > "$TASK_TMP/build.log" 2>&1; then
     printf 'FAIL: day2 test build (runtime tests were not executed)\n'
@@ -21,7 +21,7 @@ failed=0
 for bits in 32 64; do
     if ! "${CC:-cc}" -Wall -Wextra -Werror -g -O1 \
         -fsanitize=address,undefined -fno-omit-frame-pointer -DDAY2_BITS="$bits" \
-        -I"$ROOT/inc" -I"$ROOT" "$ROOT/tests/day2_table_test.c" \
+        -I"$ROOT/inc" -I"$ROOT" "$ROOT/tests/day2/day2_table_test.c" \
         "$ROOT/src/elf/elf_ident.c" "$ROOT/src/elf/elf32.c" "$ROOT/src/elf/elf64.c" \
         "$ROOT/libft/ft_memcpy.c" -o "$TASK_TMP/table-$bits" \
         > "$TASK_TMP/build-$bits.log" 2>&1; then

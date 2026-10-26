@@ -1,4 +1,4 @@
-#include "../../inc/ft_nm.h"
+#include "ft_nm.h"
 
 static bool return_false_with_free(t_symbol **symbols, size_t *count)
 {
@@ -81,10 +81,10 @@ bool collect_elf32_section(const t_file *file, t_symbol **symbols, size_t *count
                 name = get_elf32_string(file, &strtab, sym.st_name);
                 if (!name)
                     return (return_false_with_free(symbols, count));
-                len = ft_strlen(name);
+                len = strlen(name);
                 if (len >= sizeof((*symbols)[*count].s_name))
                     return (return_false_with_free(symbols, count));
-                ft_memcpy((*symbols)[*count].s_name, name, len + 1);
+                memcpy((*symbols)[*count].s_name, name, len + 1);
                 (*symbols)[*count].s_original_index = sym_index;
                 (*symbols)[*count].s_arch = 32;
                 (*symbols)[*count].s_type = ELF32_ST_TYPE(sym.st_info);
@@ -151,10 +151,10 @@ bool collect_elf64_section(const t_file *file, t_symbol **symbols, size_t *count
                 name = get_elf64_string(file, &strtab, sym.st_name);
                 if (!name)
                     return (return_false_with_free(symbols, count));
-                len = ft_strlen(name);
+                len = strlen(name);
                 if (len >= sizeof((*symbols)[*count].s_name))
                     return (return_false_with_free(symbols, count));
-                ft_memcpy((*symbols)[*count].s_name, name, len + 1);
+                memcpy((*symbols)[*count].s_name, name, len + 1);
                 (*symbols)[*count].s_original_index = sym_index;
                 (*symbols)[*count].s_arch = 64;
                 (*symbols)[*count].s_type = ELF64_ST_TYPE(sym.st_info);

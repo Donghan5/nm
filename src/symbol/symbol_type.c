@@ -1,83 +1,79 @@
-#include "../../inc/ft_nm.h"
+#include "ft_nm.h"
 
-// input t_symbol -> special input like weak -> s_shndx --> UNDEF / ABS / COMMON
-    // -> 32/64 render in general index -> decide default char with sh_type, sh_flag
-    // -> local or global in general (T, D, B, R, A)
-
-void    set_symbol_type_by_shndx(t_symbol *symbol, t_section_table *section)
+static void    check_and_set_weak_symbol(t_symbol *symbol)
 {
-    if (symbol->shndx == STB_WEAK)
-        check_and_set_weak_symbol(symbol, section);
-    else if (symbol->shndx == SHN_UNDEF)
-        symbol->type = 'U';
-    else if (symbol->shndx == SHN_ABS) // absolute symbol verify upper case and lower case
+    if (symbol->s_type == STT_OBJECT)
     {
-        if (symbol->bind == STB_LOCAL)
-            symbol->type = 'a';
+        if (symbol->s_shndx == SHN_UNDEF)
+            symbol->s_code = 'v';
         else
-            symbol->type = 'A';
-    }    
-    else if (symbol->shndx == SHN_COMMON)
-        symbol->type = 'C';
+            symbol->s_code = 'V';
+    }
     else
-        set_symbol_type_by_section(symbol, section);
-}
-
-void    check_and_set_weak_symbol(t_symbol *symbol, t_section_table *section)
-{
-    if (symbol->sh_type == STT_OBJECT)
     {
-        if (symbol->sh_shndx == SHN_UNDEF)
-            symbol->type = 'v';
+        if (symbol->s_shndx == SHN_UNDEF)
+            symbol->s_code = 'w';
         else
-            symbol->type = 'V';
-    }
-    else if (symbol->sh_type == STT_FUNC)
-    {
-        if (symbol->sh_shndx == SHN_UNDEF)
-            symbol->type = 'w';
-        else
-        symbol->type = 'W';
+            symbol->s_code = 'W';
     }
 }
 
-void    set_symbol_type_by_section(t_symbol *symbol, t_section_table *section)
+static bool    set_symbol_type_by_shndx(t_symbol *symbol)
 {
-    // check section type and flag to determine symbol type T, D, B, R
-    if (symbol->sh_type == SHT_NOBITS && symbol->sh_flags == (SHF_ALLOC | SHF_WRITE))
+    if (symbol->s_bind == STB_WEAK)
+        check_and_set_weak_symbol(symbol);
+    else if (symbol->s_shndx == SHN_UNDEF)
+        symbol->s_code = 'U';
+    else if (symbol->s_shndx == SHN_ABS)
     {
-        if (symbol->bind == STB_LOCAL)
-            symbol->type = 'b';
+        if (symbol->s_bind == STB_LOCAL)
+            symbol->s_code = 'a';
         else
-            symbol->type = 'B';
+            symbol->s_code = 'A';
+    }    
+    else if (symbol->s_shndx == SHN_COMMON)
+        symbol->s_code = 'C';
+    else
+        return (false);
+    return (true);
+}
+
+static void    set_symbol_type_by_section(t_symbol *symbol, uint32_t section_type, uint64_t section_flags)
+{
+    if (section_type == SHT_NOBITS && section_flags == (SHF_ALLOC | SHF_WRITE))
+    {
+        if (symbol->s_bind == STB_LOCAL)
+            symbol->s_code = 'b';
+        else
+            symbol->s_code = 'B';
     }
     
-    if (symbol->sh_type == SHT_PROGBITS && symbol->sh_flags == (SHF_ALLOC | SHF_WRITE))
+    if (section_type == SHT_PROGBITS && section_flags == (SHF_ALLOC | SHF_WRITE))
     {
-        if (symbol->bind == STB_LOCAL)
-            symbol->type = 'd';
+        if (symbol->s_bind == STB_LOCAL)
+            symbol->s_code = 'd';
         else
-            symbol->type = 'D';
+            symbol->s_code = 'D';
     }
 
-    if (symbol->sh_type == SHT_PROGBITS && symbol->sh_flags == SHF_ALLOC)
+    if (section_type == SHT_PROGBITS && section_flags == SHF_ALLOC)
     {
-        if (symbol->bind == STB_LOCAL)
-            symbol->type = 'r';
+        if (symbol->s_bind == STB_LOCAL)
+            symbol->s_code = 'r';
         else
-            symbol->type = 'R';
+            symbol->s_code = 'R';
     }
 
-    if (symbol->sh_type == SHT_PROGBITS && symbol->sh_flags == (SHF_ALLOC | SHF_EXECINSTR))
+    if (section_type == SHT_PROGBITS && section_flags == (SHF_ALLOC | SHF_EXECINSTR))
     {
-        if (symbol->bind == STB_LOCAL)
-            symbol->type = 't';
+        if (symbol->s_bind == STB_LOCAL)
+            symbol->s_code = 't';
         else
-            symbol->type = 'T';
+            symbol->s_code = 'T';
     }
 }
 
-bool    get_symbol_section_info(const t_symbol *symbol, const t_section_table *section, uint32_t *type, uint64_t *flags)
+static bool    get_symbol_section_info(const t_symbol *symbol, const t_section_table *section, uint32_t *type, uint64_t *flags)
 {
     Elf32_Shdr section32;
     Elf64_Shdr section64;
@@ -106,10 +102,10 @@ int symbol_type(t_symbol *symbol, t_section_table *section)
     uint32_t type;
     uint64_t flags;
 
+    if (set_symbol_type_by_shndx(symbol))
+        return (0);
     if (!get_symbol_section_info(symbol, section, &type, &flags))
         return (-1);
-    symbol->sh_type = type;
-    symbol->sh_flags = flags;
-    set_symbol_type_by_shndx(symbol, section);
+    set_symbol_type_by_section(symbol, type, flags);
     return (0);
 }

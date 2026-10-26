@@ -1,4 +1,4 @@
-#include "../../inc/ft_nm.h"
+#include "ft_nm.h"
 
 static bool check_elf64_program_header_size(const t_file *elf)
 {
@@ -30,7 +30,7 @@ static bool check_elf64_program_header_size(const t_file *elf)
         if (!check_common_range(elf, header.e_shoff, sizeof(section0)))
             return (false);
 
-        ft_memcpy(&section0, data + header.e_shoff, sizeof(section0));
+        memcpy(&section0, data + header.e_shoff, sizeof(section0));
         count = section0.sh_info;
         if (count < PN_XNUM)
             return (false);
@@ -48,7 +48,7 @@ static bool check_elf64_header_fields(const t_file *elf)
         return (false);
 
     Elf64_Ehdr header;
-    ft_memcpy(&header, elf->f_data, sizeof(header));
+    memcpy(&header, elf->f_data, sizeof(header));
 
     if (header.e_ehsize != sizeof(Elf64_Ehdr))
         return (false);
@@ -84,7 +84,7 @@ bool read_elf64_section(const t_section_table *table, size_t index, Elf64_Shdr *
 
     offset = table->offset + index * sizeof(*section);
     data = table->file->f_data;
-    ft_memcpy(section, data + offset, sizeof(*section));
+    memcpy(section, data + offset, sizeof(*section));
     return (true);
 }
 
@@ -110,7 +110,7 @@ bool read_elf64_symbol(const t_file *file, const Elf64_Shdr *symtab, size_t sym_
 
     offset = symtab->sh_offset + sym_index * sizeof(Elf64_Sym);
     data = file->f_data;
-    ft_memcpy(sym, data + offset, sizeof(*sym));
+    memcpy(sym, data + offset, sizeof(*sym));
     return (true);
 }
 
@@ -164,7 +164,7 @@ int get_elf64_section_table(const t_file *elf, t_section_table *section_table)
 
     if (!check_elf64_header_fields(elf))
         return (-1);
-    ft_memcpy(&header, data, sizeof(header));
+    memcpy(&header, data, sizeof(header));
 
     if (header.e_shoff > SIZE_MAX || header.e_phoff > SIZE_MAX)
         return (-1);
@@ -189,7 +189,7 @@ int get_elf64_section_table(const t_file *elf, t_section_table *section_table)
     {
         if (!check_common_range(elf, header.e_shoff, sizeof(section0)))
             return (-1);
-        ft_memcpy(&section0, data + header.e_shoff, sizeof(section0));
+        memcpy(&section0, data + header.e_shoff, sizeof(section0));
         if (section0.sh_size > SIZE_MAX)
             return (-1);
         count = section0.sh_size;

@@ -1,4 +1,4 @@
-#include "../../inc/ft_nm.h"
+#include "ft_nm.h"
 
 static bool check_elf32_program_header_size(const t_file *elf)
 {
@@ -11,7 +11,7 @@ static bool check_elf32_program_header_size(const t_file *elf)
         return (false);
 
     data = elf->f_data;
-    ft_memcpy(&header, data, sizeof(header));
+    memcpy(&header, data, sizeof(header));
     count = header.e_phnum;
     if (count == 0)
         return (true);
@@ -30,7 +30,7 @@ static bool check_elf32_program_header_size(const t_file *elf)
         if (!check_common_range(elf, header.e_shoff, sizeof(section0)))
             return (false);
 
-        ft_memcpy(&section0, data + header.e_shoff, sizeof(section0));
+        memcpy(&section0, data + header.e_shoff, sizeof(section0));
         count = section0.sh_info;
         if (count < PN_XNUM)
             return (false);
@@ -48,7 +48,7 @@ static bool check_elf32_header_fields(const t_file *elf)
         return (false);
 
     Elf32_Ehdr header;
-    ft_memcpy(&header, elf->f_data, sizeof(header));
+    memcpy(&header, elf->f_data, sizeof(header));
 
     if (header.e_ehsize != sizeof(Elf32_Ehdr))
         return (false);
@@ -84,7 +84,7 @@ bool read_elf32_section(const t_section_table *table, size_t index, Elf32_Shdr *
 
     offset = table->offset + index * sizeof(*section);
     data = table->file->f_data;
-    ft_memcpy(section, data + offset, sizeof(*section));
+    memcpy(section, data + offset, sizeof(*section));
     return (true);
 }
 
@@ -133,7 +133,7 @@ bool read_elf32_symbol(const t_file *file, const Elf32_Shdr *symtab, size_t sym_
 
     offset = symtab->sh_offset + sym_index * sizeof(Elf32_Sym);
     data = file->f_data;
-    ft_memcpy(sym, data + offset, sizeof(*sym));
+    memcpy(sym, data + offset, sizeof(*sym));
     return (true);
 }
 
@@ -161,7 +161,7 @@ int get_elf32_section_table(const t_file *elf, t_section_table *section_table)
     if (!check_elf32_program_header_size(elf))
         return (-1);
 
-    ft_memcpy(&header, data, sizeof(header));
+    memcpy(&header, data, sizeof(header));
     count = header.e_shnum;
     if (count >= SHN_LORESERVE)
         return (-1);
@@ -180,7 +180,7 @@ int get_elf32_section_table(const t_file *elf, t_section_table *section_table)
     {
         if (!check_common_range(elf, header.e_shoff, sizeof(section0)))
             return (-1);
-        ft_memcpy(&section0, data + header.e_shoff, sizeof(section0));
+        memcpy(&section0, data + header.e_shoff, sizeof(section0));
         count = section0.sh_size;
         if (count < SHN_LORESERVE)
             return (-1);

@@ -1,4 +1,4 @@
-#include "../../inc/ft_nm.h"
+#include "ft_nm.h"
 
 void	cleanup_and_exit(t_file *file, const char *msg)
 {
