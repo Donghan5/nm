@@ -7,6 +7,20 @@
 후보 실행 파일은 직접 새로 빌드해야 한다. 테스트가 main을 대신 구현하거나
 필터·정렬·출력을 자체 구현하여 통과시키지 않는다.
 
+관리자 권한이 없어 sanitizer 런타임을 설치할 수 없다면 다음처럼 실행한다.
+기본값은 기존과 같은 `address,undefined`이며 선택한 설정을 실행 시 표시한다.
+
+```bash
+# UBSan 없이 ASan만 사용
+DAY4_SANITIZERS=address ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 make test-4 DAY4_NM="$PWD/ft_nm"
+# ASan도 사용할 수 없다면 sanitizer 없이 기능 검사
+DAY4_SANITIZERS=none make test-4 DAY4_NM="$PWD/ft_nm"
+```
+
+어느 설정이든 분류 50개와 출력 비교 2개는 동일하게 실행한다.
+`address`는 UBSan 검사를, `none`은 ASan/UBSan 검사를 수행하지 않는다.
+이 설정에서 통과해도 생략한 sanitizer 검사를 통과한 것으로 해석하지 않는다.
+
 ## 분류 검사: 25개 × ELF32/ELF64 = 50개
 
 `day4_type_test.c`는 실제 `symbol_type()`과 실제 section reader를 연결한다.

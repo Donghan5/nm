@@ -18,6 +18,7 @@ static void init_symbol(t_symbol *symbol)
     symbol->s_bind = 0;
     symbol->s_shndx = 0;
     symbol->s_addr = 0;
+    symbol->s_size = 0;
     symbol->s_code = 0;
 }
 
@@ -91,6 +92,7 @@ bool collect_elf32_section(const t_file *file, t_symbol **symbols, size_t *count
                 (*symbols)[*count].s_bind = ELF32_ST_BIND(sym.st_info);
                 (*symbols)[*count].s_shndx = sym.st_shndx;
                 (*symbols)[*count].s_addr = sym.st_value;
+                (*symbols)[*count].s_size = sym.st_size;
                 (*count)++;
                 sym_index++;
             }
@@ -161,6 +163,7 @@ bool collect_elf64_section(const t_file *file, t_symbol **symbols, size_t *count
                 (*symbols)[*count].s_bind = ELF64_ST_BIND(sym.st_info);
                 (*symbols)[*count].s_shndx = sym.st_shndx;
                 (*symbols)[*count].s_addr = sym.st_value;
+                (*symbols)[*count].s_size = sym.st_size;
                 (*count)++;
                 sym_index++;
             }

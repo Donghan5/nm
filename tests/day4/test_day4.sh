@@ -6,6 +6,16 @@ trap 'rm -rf -- "$TASK_TMP"' EXIT
 export LC_ALL=C
 export ASAN_OPTIONS=${ASAN_OPTIONS:-detect_leaks=1:halt_on_error=1}
 export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
+sanitizers=${DAY4_SANITIZERS-address,undefined}
+sanitizer_flags=()
+case "$sanitizers" in
+    address,undefined|address|undefined)
+        sanitizer_flags=("-fsanitize=$sanitizers" -fno-omit-frame-pointer)
+        ;;
+    none) ;;
+    *) printf 'Invalid DAY4_SANITIZERS: %s\n' "$sanitizers" >&2; exit 1 ;;
+esac
+printf 'Sanitizers: %s\n' "$sanitizers"
 passed=0
 failed=0
 unavailable=0
@@ -18,7 +28,7 @@ cases=(undefined absolute-global absolute-local common
     data-global data-local bss-global bss-local readonly-global readonly-local
     readonly-merge-strings text-extra-group tls-data tls-bss index-out-of-range index-huge)
 if "${CC:-cc}" -Wall -Wextra -Werror -g -O1 \
-    -fsanitize=address,undefined -fno-omit-frame-pointer \
+    "${sanitizer_flags[@]}" \
     -I"$ROOT/inc" -I"$ROOT" "$ROOT/tests/day4/day4_type_test.c" \
     "$ROOT/src/symbol/symbol_type.c" "$ROOT/src/elf/elf_ident.c" \
     "$ROOT/src/elf/elf32.c" "$ROOT/src/elf/elf64.c" \

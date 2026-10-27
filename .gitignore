@@ -1,3 +1,4 @@
 nm.pdf:Zone.Identifier
 libft/*.o
 build
+ft_nm
