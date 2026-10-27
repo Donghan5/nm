@@ -5,11 +5,8 @@ ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 TASK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/ft-nm-day1.XXXXXX")
 trap 'rm -rf -- "$TASK_TMP"' EXIT
 export LC_ALL=C
-export ASAN_OPTIONS=detect_leaks=1:halt_on_error=1
-export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
-
 mode=${1:-native}
-build_flags=(-fsanitize=address,undefined -fno-omit-frame-pointer -Wl,--wrap=fstat)
+build_flags=()
 if [ "$mode" = 32 ]; then
     # Keep the conversion-only suite independent of 32-bit sanitizer runtimes.
     build_flags=(-m32 -D_FILE_OFFSET_BITS=64 -DDAY1_TEST_32 -Wl,--wrap=fstat64)
@@ -29,6 +26,10 @@ if [ "$mode" = 32 ]; then
 elif [ "$mode" != native ]; then
     printf 'Usage: bash tests/day1/test_day1.sh [native|32]\n' >&2
     exit 1
+else
+    sanitizers=${DAY1_SANITIZERS:-${NM_TEST_SANITIZERS-address,undefined}}
+    source "$ROOT/tests/sanitizers.sh"
+    build_flags=("${sanitizer_flags[@]}" -Wl,--wrap=fstat)
 fi
 
 printf 'hello\n' > "$TASK_TMP/regular"
@@ -41,7 +42,6 @@ if ! "${CC:-cc}" -Wall -Wextra -Werror -g -O1 \
     -I"$ROOT/inc" -I"$ROOT" \
     "$ROOT/tests/day1/day1_file_test.c" "$ROOT/src/file.c" \
     "$ROOT/src/utils/error.c" \
-    "$ROOT/libft/ft_strlcpy.c" "$ROOT/libft/ft_strlen.c" \
     -o "$TASK_TMP/day1_file_test" > "$TASK_TMP/build.log" 2>&1; then
     printf 'FAIL: day1 test build (runtime tests were not executed)\n'
     cat "$TASK_TMP/build.log"

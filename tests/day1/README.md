@@ -20,7 +20,7 @@ bash tests/day1/test_day1.sh
 
 Requires Linux with `/proc/self/fd`, a C compiler, AddressSanitizer/UndefinedBehaviorSanitizer, and `timeout`. To select a compiler, use `CC=clang bash tests/day1/test_day1.sh`.
 
-The harness links the actual `src/file.c`, project headers, and required libft functions. It excludes the empty ELF parsers and unfinished main. A full project build must be checked separately. If the test build fails, runtime tests are reported as not executed.
+The harness links the actual `src/file.c`, error handling, project headers, and libc. It excludes ELF parsing and main. A full project build must be checked separately. If the test build fails, runtime tests are reported as not executed. See [sanitizer configuration](../README.md) for explicit runtime-limited runs; the default remains ASan+UBSan.
 
 | Test | Checks |
 |---|---|

@@ -68,4 +68,26 @@ tls_bss:
 .local absolute_local
 .set absolute_local,0x42
 .comm common_global,16,8
+.section .init_array,"aw",@init_array
+.globl init_array_global
+init_array_global:
+.long 0
+.local init_array_local
+init_array_local:
+.long 0
+.section .fini_array,"aw",@fini_array
+.globl fini_array_global
+fini_array_global:
+.long 0
+.section .preinit_array,"aw",@preinit_array
+.local preinit_array_local
+preinit_array_local:
+.long 0
+.section .note.day4,"a",@note
+.balign 4
+.local note_local
+note_local:
+.long 4,4,1
+.asciz "NM4"
+.long 1
 .section .note.GNU-stack,"",@progbits

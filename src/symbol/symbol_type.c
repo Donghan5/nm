@@ -40,40 +40,21 @@ static bool    set_symbol_type_by_shndx(t_symbol *symbol)
 
 static void    set_symbol_type_by_section(t_symbol *symbol, uint32_t section_type, uint64_t section_flags)
 {
-    if (section_type == SHT_NOBITS && HAS_ALL_FLAGS(section_flags, SHF_ALLOC) \
-        && !HAS_ANY_FLAG(section_flags, SHF_EXECINSTR))
-    {
-        if (symbol->s_bind == STB_LOCAL)
-            symbol->s_code = 'b';
-        else
-            symbol->s_code = 'B';
-    }
-    
-    if (section_type == SHT_PROGBITS && HAS_ALL_FLAGS(section_flags, SHF_ALLOC | SHF_WRITE) \
-        && !HAS_ANY_FLAG(section_flags, SHF_EXECINSTR))
-    {
-        if (symbol->s_bind == STB_LOCAL)
-            symbol->s_code = 'd';
-        else
-            symbol->s_code = 'D';
-    }
+    char code;
 
-    if (section_type == SHT_PROGBITS && HAS_ALL_FLAGS(section_flags, SHF_ALLOC) \
-        && !HAS_ANY_FLAG(section_flags, SHF_WRITE | SHF_EXECINSTR))
-    {
-        if (symbol->s_bind == STB_LOCAL)
-            symbol->s_code = 'r';
-        else
-            symbol->s_code = 'R';
-    }
-
-    if ((section_type == SHT_NOBITS || section_type == SHT_PROGBITS) && HAS_ALL_FLAGS(section_flags, SHF_ALLOC | SHF_EXECINSTR))
-    {
-        if (symbol->s_bind == STB_LOCAL)
-            symbol->s_code = 't';
-        else
-            symbol->s_code = 'T';
-    }
+    if (!HAS_ALL_FLAGS(section_flags, SHF_ALLOC))
+        return ;
+    if (HAS_ANY_FLAG(section_flags, SHF_EXECINSTR))
+        code = 'T';
+    else if (section_type == SHT_NOBITS)
+        code = 'B';
+    else if (HAS_ANY_FLAG(section_flags, SHF_WRITE))
+        code = 'D';
+    else
+        code = 'R';
+    if (symbol->s_bind == STB_LOCAL)
+        code += 'a' - 'A';
+    symbol->s_code = code;
 }
 
 static bool    get_symbol_section_info(const t_symbol *symbol, const t_section_table *section, uint32_t *type, uint64_t *flags)

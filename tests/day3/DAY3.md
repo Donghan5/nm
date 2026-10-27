@@ -29,7 +29,7 @@ Requires little-endian x86 Linux, a C compiler with AddressSanitizer and Undefin
 - `day3_compare.py`: independent reference reader using Python's standard library; compares the first regular symbol table entry-for-entry, including the initial null entry.
 - `test_day3.sh`: strict builds, per-case timeouts, sanitizers, real fixture generation, and summary.
 
-The runner links actual ELF32/ELF64, identification, symbol collection/validation, and required libft implementations. It excludes unfinished symbol classification, sorting, printing, and main. It does not replace project functions with mocks or suppress warnings. Build failures report runtime tests not executed.
+The runner links actual ELF32/ELF64, identification, symbol collection/validation, and libc. It excludes symbol classification, sorting, printing, and main. It does not replace project functions with mocks or suppress warnings. Build failures report runtime tests not executed. See [sanitizer configuration](../README.md) for explicit runtime-limited runs; the default remains ASan+UBSan.
 
 ## Contracts and coverage
 

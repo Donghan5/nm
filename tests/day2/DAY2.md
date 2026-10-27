@@ -2,7 +2,7 @@
 
 Run `make test-2`. Requirements: Linux on an x86 little-endian host, a C compiler with AddressSanitizer and UndefinedBehaviorSanitizer, and `timeout`.
 
-The suite links actual project implementations and libft memcpy without modifying source files or suppressing diagnostics. Each case/group runs in a separate process with a 10-second timeout. Build failures are reported as runtime tests not executed. Temporary fixtures and executables are removed on exit.
+The suite links actual project implementations and libc without modifying source files or suppressing diagnostics. Each case/group runs in a separate process with a 10-second timeout. Build failures are reported as runtime tests not executed. Temporary fixtures and executables are removed on exit. See [sanitizer configuration](../README.md) for explicit runtime-limited runs; the default remains ASan+UBSan.
 
 ## Return value contract
 

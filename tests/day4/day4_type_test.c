@@ -40,6 +40,18 @@ static const t_case cases[] = {
     {"text-extra-group", STB_GLOBAL, STT_FUNC, 2, SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR | SHF_GROUP, 'T', 0},
     {"tls-data", STB_GLOBAL, STT_TLS, 2, SHT_PROGBITS, SHF_ALLOC | SHF_WRITE | SHF_TLS, 'D', 0},
     {"tls-bss", STB_GLOBAL, STT_TLS, 2, SHT_NOBITS, SHF_ALLOC | SHF_WRITE | SHF_TLS, 'B', 0},
+    {"dynamic-global", STB_GLOBAL, STT_OBJECT, 2, SHT_DYNAMIC, SHF_ALLOC | SHF_WRITE, 'D', 0},
+    {"dynamic-local", STB_LOCAL, STT_OBJECT, 2, SHT_DYNAMIC, SHF_ALLOC | SHF_WRITE, 'd', 0},
+    {"init-array-global", STB_GLOBAL, STT_OBJECT, 2, SHT_INIT_ARRAY, SHF_ALLOC | SHF_WRITE, 'D', 0},
+    {"init-array-local", STB_LOCAL, STT_OBJECT, 2, SHT_INIT_ARRAY, SHF_ALLOC | SHF_WRITE, 'd', 0},
+    {"fini-array-global", STB_GLOBAL, STT_OBJECT, 2, SHT_FINI_ARRAY, SHF_ALLOC | SHF_WRITE, 'D', 0},
+    {"fini-array-local", STB_LOCAL, STT_OBJECT, 2, SHT_FINI_ARRAY, SHF_ALLOC | SHF_WRITE, 'd', 0},
+    {"preinit-array-global", STB_GLOBAL, STT_OBJECT, 2, SHT_PREINIT_ARRAY, SHF_ALLOC | SHF_WRITE, 'D', 0},
+    {"preinit-array-local", STB_LOCAL, STT_OBJECT, 2, SHT_PREINIT_ARRAY, SHF_ALLOC | SHF_WRITE, 'd', 0},
+    {"note-global", STB_GLOBAL, STT_OBJECT, 2, SHT_NOTE, SHF_ALLOC, 'R', 0},
+    {"note-local", STB_LOCAL, STT_OBJECT, 2, SHT_NOTE, SHF_ALLOC, 'r', 0},
+    {"note-nonalloc", STB_LOCAL, STT_OBJECT, 2, SHT_NOTE, 0, '?', 0},
+    {"text-writable", STB_GLOBAL, STT_FUNC, 2, SHT_PROGBITS, SHF_ALLOC | SHF_WRITE | SHF_EXECINSTR, 'T', 0},
     {"index-out-of-range", STB_GLOBAL, STT_FUNC, 3, SHT_PROGBITS, 6, 0, -1},
     {"index-huge", STB_GLOBAL, STT_FUNC, SHN_LORESERVE - 1, SHT_PROGBITS, 6, 0, -1}
 };

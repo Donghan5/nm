@@ -26,7 +26,10 @@ cases=(undefined absolute-global absolute-local common
     weak-object-defined weak-object-undefined weak-function-defined weak-function-undefined
     weak-notype-defined weak-notype-undefined text-global text-local text-notype
     data-global data-local bss-global bss-local readonly-global readonly-local
-    readonly-merge-strings text-extra-group tls-data tls-bss index-out-of-range index-huge)
+    readonly-merge-strings text-extra-group tls-data tls-bss
+    dynamic-global dynamic-local init-array-global init-array-local
+    fini-array-global fini-array-local preinit-array-global preinit-array-local
+    note-global note-local note-nonalloc text-writable index-out-of-range index-huge)
 if "${CC:-cc}" -Wall -Wextra -Werror -g -O1 \
     "${sanitizer_flags[@]}" \
     -I"$ROOT/inc" -I"$ROOT" "$ROOT/tests/day4/day4_type_test.c" \
@@ -46,7 +49,7 @@ if "${CC:-cc}" -Wall -Wextra -Werror -g -O1 \
         done
     done
 else
-    printf 'FAIL: classification build; all 50 runtime cases NOT RUN.\n'
+    printf 'FAIL: classification build; all %s runtime cases NOT RUN.\n' "$((2 * ${#cases[@]}))"
     cat "$TASK_TMP/build.log"
     failed=$((failed + 1))
 fi

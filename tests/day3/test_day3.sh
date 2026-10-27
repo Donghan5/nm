@@ -4,18 +4,17 @@ ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 TASK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/ft-nm-day3.XXXXXX")
 trap 'rm -rf -- "$TASK_TMP"' EXIT
 export LC_ALL=C
-export ASAN_OPTIONS=detect_leaks=1:halt_on_error=1
-export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
+sanitizers=${DAY3_SANITIZERS:-${NM_TEST_SANITIZERS-address,undefined}}
+source "$ROOT/tests/sanitizers.sh"
 passed=0
 failed=0
 unavailable=0
 for bits in 32 64; do
     if ! "${CC:-cc}" -Wall -Wextra -Werror -g -O1 \
-        -fsanitize=address,undefined -fno-omit-frame-pointer -DDAY3_BITS="$bits" \
+        "${sanitizer_flags[@]}" -DDAY3_BITS="$bits" \
         -I"$ROOT/inc" -I"$ROOT" "$ROOT/tests/day3/day3_symbol_test.c" \
         "$ROOT/src/elf/elf_ident.c" "$ROOT/src/elf/elf32.c" "$ROOT/src/elf/elf64.c" \
         "$ROOT/src/symbol/symbol_collect.c" "$ROOT/src/symbol/symbol_validate.c" \
-        "$ROOT/libft/ft_memcpy.c" "$ROOT/libft/ft_strlen.c" \
         -o "$TASK_TMP/symbol-$bits" > "$TASK_TMP/build.log" 2>&1; then
         printf 'FAIL: Day 3 ELF%s test build; runtime tests not executed.\n' "$bits"
         cat "$TASK_TMP/build.log"
