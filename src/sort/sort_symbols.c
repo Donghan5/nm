@@ -9,7 +9,7 @@ static int compare_symbols(const void *a, const void *b)
     
     sym_a = (const t_symbol *)a;
     sym_b = (const t_symbol *)b;
-    name_cmp = ft_strncmp(sym_a->s_name, sym_b->s_name, sizeof(sym_a->s_name));
+    name_cmp = strncmp(sym_a->s_name, sym_b->s_name, sizeof(sym_a->s_name));
     if (name_cmp != 0)
         return (name_cmp);
     return (0);

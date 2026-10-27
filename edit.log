@@ -447,3 +447,36 @@ symbol_type.c 구현은 수정하지 않았으며 컴파일 및 런타임 테스
 - 결과: signedness 비교, main.c의 미선언 symbol, symbol_type.c의 미선언 table 및 미사용 section으로 실패.
 - 실행 검증은 하지 않았다. 메모리 오류·반복 처리 위험은 코드 흐름 분석 결과다.
 - 이번 요청에서는 edit.log에 리뷰만 기록했으며 구현 파일은 수정하지 않았다.
+
+
+[2026-10-27 — Day4 실패 항목]
+
+[실행 및 결과]
+- Makefile의 src/symbol/symbol_validate.c 누락을 보완하고, Day4 테스트의 삭제된 libft/ft_memcpy.c 참조를 제거했다.
+- 테스트 스크립트가 외부 ASAN_OPTIONS를 받을 수 있도록 변경했다. 기본 누수 검사 설정은 유지한다.
+- make -j4: 컴파일·링크 성공. 후속 make: 재빌드 없음.
+- 실행 명령: ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 make test-4 DAY4_NM=/home/donghank/projects/nm-github/ft_nm
+- 결과: 50 passed / 2 failed / 0 unavailable.
+- ELF32·ELF64 분류 50개는 모두 통과했다.
+- 실제 ELF32·ELF64 .o의 시스템 nm 출력 비교는 각각 실패했다.
+- 양쪽 LC_ALL=C, GNU nm 2.42 기준. 비교기는 stdout을 바이트 그대로 비교하고 stderr·종료 상태를 별도로 확인한다.
+
+[실패 1 — 기본 출력 필터 누락]
+- 빈 이름의 심볼이 U 문자와 함께 출력된다.
+- STT_FILE 심볼 day4_fixture.s가 a 문자와 함께 출력된다.
+- 기본 출력에서 빈 이름·STT_FILE·STT_SECTION을 제외하는 필터가 필요하다.
+- 일반 local/global, undefined, weak 등 기본 출력 대상은 유지해야 한다.
+
+[실패 2 — COMMON 심볼 출력값 오류]
+- fixture: .comm common_global,16,8
+- 시스템 nm: ELF32 00000010 C common_global / ELF64 0000000000000010 C common_global
+- 현재 구현: ELF32 00000008 C common_global / ELF64 0000000000000008 C common_global
+- COMMON의 st_value는 정렬 요구(8)이며, 기준 nm은 심볼 크기 st_size(16)를 출력한다.
+- COMMON 출력값을 st_size에 맞추도록 수집·출력 간 값 전달을 검토해야 한다. 일반 심볼 값 처리를 함께 바꾸지 않는다.
+
+[범위 및 다음 작업]
+- 이번 fixture의 diff에는 위 두 문제 외의 정렬·분류 문자·주소 폭·공백 차이는 나타나지 않았다. 모든 입력의 정확성을 뜻하지 않는다.
+- 기본 필터와 COMMON 값 처리를 구현한 뒤 새로 빌드하고 Day4 전체 비교를 다시 실행한다.
+- 분류 테스트 통과만으로 Day4 전체 완료로 판정하지 않는다.
+- 분류 테스트는 ASan·UBSan을 사용했다. 환경 제약으로 누수 검사는 비활성화했으며 누수 없음으로 판정하지 않는다.
+- 구현 소스는 수정하지 않았다. 이번 요청에서는 edit.log에 결과만 추가했다.

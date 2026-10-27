@@ -4,7 +4,7 @@ ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 TASK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/ft-nm-day4.XXXXXX")
 trap 'rm -rf -- "$TASK_TMP"' EXIT
 export LC_ALL=C
-export ASAN_OPTIONS=detect_leaks=1:halt_on_error=1
+export ASAN_OPTIONS=${ASAN_OPTIONS:-detect_leaks=1:halt_on_error=1}
 export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
 passed=0
 failed=0
@@ -21,7 +21,7 @@ if "${CC:-cc}" -Wall -Wextra -Werror -g -O1 \
     -fsanitize=address,undefined -fno-omit-frame-pointer \
     -I"$ROOT/inc" -I"$ROOT" "$ROOT/tests/day4/day4_type_test.c" \
     "$ROOT/src/symbol/symbol_type.c" "$ROOT/src/elf/elf_ident.c" \
-    "$ROOT/src/elf/elf32.c" "$ROOT/src/elf/elf64.c" "$ROOT/libft/ft_memcpy.c" \
+    "$ROOT/src/elf/elf32.c" "$ROOT/src/elf/elf64.c" \
     -o "$TASK_TMP/type-test" > "$TASK_TMP/build.log" 2>&1; then
     for bits in 32 64; do
         for name in "${cases[@]}"; do

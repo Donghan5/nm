@@ -8,6 +8,7 @@
 */
 # include <unistd.h>
 # include <stdlib.h> // for qsort
+# include <string.h> // for strncmp, memcpy
 # include <stdio.h> // for perror
 # include <error.h> 
 # include <sys/stat.h>
@@ -21,13 +22,15 @@
 /* Custom headers */
 # include "struct.h"
 # include "functions.h"
-# include "./libft/libft.h"
-# include "./libft/ft_printf.h"
 
 
 /* Macros for flags */
-#define FLAG_R  (1 << 0)
-#define FLAG_P  (1 << 1)
+# define FLAG_R  (1 << 0)
+# define FLAG_P  (1 << 1)
+
+/* Macros for bits */
+# define HAS_ALL_FLAGS(value, mask) (((value) & (mask)) == (mask))
+# define HAS_ANY_FLAG(value, mask) (((value) & (mask)) != 0)
 
 /* Global variables */
 extern int g_flags;

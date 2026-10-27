@@ -12,6 +12,8 @@ static void usage(void)
 	exit (1);	// Exit after printing usage
 }
 
+
+
 static int parse_flags(int argc, char **argv)
 {
 	int i = 1;
@@ -32,74 +34,72 @@ static int parse_flags(int argc, char **argv)
 		}
 		i++;
 	}
-	return (i); // Return the index of the first non-flag argument
-}
-
-static int handle_aout_file(t_symbol **symbols, size_t *count)
-{
-	t_file file;
-	int i;
-	i = 0;
-	if (handle_file("a.out", &file) < 0)
-	{
-		fprintf(stderr, "Error: Could not process file 'a.out'\n");
-		return (-1);
-	}
-	if (!get_elf_section(&file, symbols, count))
-	{
-		fprintf(stderr, "Error: Could not get ELF section for file 'a.out'\n");
-		cleanup_file(&file);
-		return (-1);
-	}
-	while (i < *count)
-	{
-		if (symbol_type(*symbols + i, NULL) < 0)
-		{
-			fprintf(stderr, "Error: Could not determine symbol types for file 'a.out'\n");
-			cleanup_file(&file);
-			return (-1);
-		}
-		i++;
-	}
-	print_symbols(*symbols, *count);
-	free(*symbols);
-	*symbols = NULL;
-	*count = 0;
-	cleanup_file(&file);
-	return (0);
+	return (i);
 }
 
 static int process_file(const char *filename)
 {
-	t_symbol *symbols = NULL;
-	size_t count = 0;
 	t_file file;
+	t_symbol *symbols;
+	t_section_table table;
+	size_t i;
+	size_t count;
+	const unsigned char *data;
 
+	count = 0;
+	symbols = NULL;
+	init_file(&file);
 	if (handle_file(filename, &file) < 0)
+		return (handle_exit_with_error_and_cleanup("Could not process file", &file, NULL));
+
+	if (!get_elf_section(&file, &symbols, &count))
+		return (handle_exit_with_error_and_cleanup("Could not get ELF section for file", &file, NULL));
+
+	data = file.f_data;
+	if (data[EI_CLASS] == ELFCLASS32)
 	{
-		fprintf(stderr, "Error: Could not process file '%s'\n", filename);
-		return (-1);
+		if (get_elf32_section_table(&file, &table) < 0)
+			return (handle_exit_with_error_and_cleanup("Could not get ELF32 section table for file", &file, symbols));
+	}
+	else
+	{
+		if (get_elf64_section_table(&file, &table) < 0)
+			return (handle_exit_with_error_and_cleanup("Could not get ELF64 section table for file", &file, symbols));
 	}
 
+	i = 0;
+	while (i < count)
+	{
+		if (symbol_type(symbols + i, &table) < 0)
+			return (handle_exit_with_error_and_cleanup("Could not determine symbol types for file", &file, symbols));
+		i++;
+	}
+	print_symbols(symbols, count);
+	free(symbols);
+	symbols = NULL;
+	count = 0;
+	cleanup_file(&file);
+	return (0);
 }
 
 int main(int argc, char **argv)
 {
-	int i;
+	int start_index;
+	int status;
 
 	start_index = parse_flags(argc, argv);
+	status = 0;
 	if (start_index == argc)
 	{
-		if (handle_aout_file(&symbols, &count) < 0)
+		if (process_file("a.out") < 0)
 			return (1);
-		print_symbols(symbols, count);
-		free(symbols);
-		return (0);
 	}
+
 	while (start_index < argc)
 	{
-		process_file(argv[start_index]);
+		if (process_file(argv[start_index]) < 0)
+			status = 1;
 		start_index++;
 	}
-	return (0);
+	return (status);
 }

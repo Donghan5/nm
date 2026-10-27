@@ -5,31 +5,27 @@ CPPFLAGS = -Iinc -I.
 
 SRCS = src/main.c src/file.c \
 	src/elf/elf_ident.c src/elf/elf32.c src/elf/elf64.c \
-	src/symbol/symbol_collect.c src/symbol/symbol_type.c \
-	src/sort/symbol_sort.c src/print/symbol_print.c src/utils/error.c
-OBJS = $(SRCS:.c=.o)
-DEPS = $(OBJS:.o=.d)
-LIBFT = libft/libft.a
+	src/symbol/symbol_collect.c src/symbol/symbol_validate.c src/symbol/symbol_type.c \
+	src/sort/sort_symbols.c src/print/print_symbols.c src/utils/error.c
+OBJ_DIR = build/obj
+DEP_DIR = build/dep
+OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o)
+DEPS = $(SRCS:%.c=$(DEP_DIR)/%.d)
 
 all: $(NAME)
 
-$(NAME): $(OBJS) $(LIBFT)
-	$(CC) $(CFLAGS) $(OBJS) $(LIBFT) -o $@
+$(NAME): $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) -o $@
 
-$(LIBFT): FORCE
-	$(MAKE) -C libft all
-
-$(OBJS): | $(LIBFT)
-
-%.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
+$(OBJ_DIR)/%.o: %.c
+	mkdir -p $(dir $@) $(dir $(DEP_DIR)/$*.d)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -MF $(DEP_DIR)/$*.d -c $< -o $@
 
 clean:
-	$(MAKE) -C libft clean
 	$(RM) $(OBJS) $(DEPS)
+	$(RM) $(SRCS:.c=.o) $(SRCS:.c=.d)
 
 fclean: clean
-	$(MAKE) -C libft fclean
 	$(RM) $(NAME)
 
 re: fclean
@@ -50,8 +46,6 @@ test-3:
 test-4:
 	CC="$(CC)" DAY4_NM="$(DAY4_NM)" bash tests/day4/test_day4.sh
 
-FORCE:
-
 -include $(DEPS)
 
-.PHONY: all clean fclean re test-1 test-1-32 test-2 test-3 test-4 FORCE
+.PHONY: all clean fclean re test-1 test-1-32 test-2 test-3 test-4

@@ -11,7 +11,7 @@ static bool check_elf64_program_header_size(const t_file *elf)
         return (false);
 
     data = elf->f_data;
-    ft_memcpy(&header, data, sizeof(header));
+    memcpy(&header, data, sizeof(header));
     count = header.e_phnum;
     if (count == 0)
         return (true);
