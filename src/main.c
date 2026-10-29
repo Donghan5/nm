@@ -67,14 +67,23 @@ static int process_file(const char *filename, bool show_filename)
 	size_t count;
 	const unsigned char *data;
 	int	saved_errno;
+	int file_status;
 
 	count = 0;
 	symbols = NULL;
 	init_file(&file);
-	if (handle_file(filename, &file) < 0)
+	file_status = handle_file(filename, &file);
+	if (file_status < 0)
 	{
 		saved_errno = errno;
 		cleanup_file(&file);
+		if (file_status == FILE_EMPTY)
+			return (-1);
+		if (file_status == FILE_DIRECTORY)
+		{
+			fprintf(stderr, "ft_nm: Warning: '%s' is a directory\n", filename);
+			return (-1);
+		}
 		return (report_error(filename, strerror(saved_errno)));
 	}
 

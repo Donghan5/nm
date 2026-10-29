@@ -579,3 +579,53 @@ symbol_type.c 구현은 수정하지 않았으며 컴파일 및 런타임 테스
 - 재실행 스크립트: /tmp/nm-integration-20261027/run.py
 - 임시 경로는 장기 보존을 보장하지 않는다.
 - 이번 요청에서는 edit.log만 추가했으며 구현 코드와 milestone.md는 수정하지 않았다.
+
+
+[2026-10-29 — 빈 파일·디렉터리 구분 및 Day5 재검증]
+
+[수정 내용]
+- inc/struct.h: FILE_ERROR(-1), FILE_EMPTY(-2), FILE_DIRECTORY(-3) 상태를 정의했다.
+- src/file.c: fstat 결과로 디렉터리와 크기 0 입력을 매핑 전에 구분하고, handle_file에서 상태를 호출자에게 전달한다. 실패 시 fd를 닫으며 원래 errno를 보존한다.
+- src/main.c: process_file이 빈 파일은 진단 없이 실패 반환하고, 디렉터리는 파일명을 포함한 경고를 출력한 뒤 실패 반환한다. 다음 파일 처리와 최종 종료 상태 1은 유지한다.
+- 앞서 추가한 cleanup_file의 MAP_FAILED 방어도 재확인했다. 빈 파일·디렉터리의 잘못된 munmap 호출은 관측되지 않았다.
+
+[검증 환경 및 기준]
+- GCC 13.3.0, GNU nm 2.42, LC_ALL=C, 개별 프로세스 timeout 10초.
+- 일반 비교는 stdout·stderr·종료 상태 완전 일치 기준이다.
+- 미지원 -z 1건은 합의한 기준으로 검사한다: stdout 없음, stderr에 오류와 사용법 출력, 종료 상태 1. GNU nm 전체 도움말과의 완전 일치를 요구하지 않는다.
+
+[Day5 통합 결과]
+- 정상 ELF32/64 형식·플래그: 50 PASS / 0 FAIL.
+- 복수 파일: 5 PASS / 0 FAIL.
+- 기본 인자·옵션: 4 PASS / 0 FAIL.
+- 오류·stripped·혼합 입력: 2 PASS / 7 FAIL.
+- 학교 공식 바이너리: 6 PASS / 18 FAIL.
+- 합계: 67 PASS / 25 FAIL, 총 92건. 직전 65 PASS / 27 FAIL에서 2건 개선.
+- 새로 통과한 사례는 빈 파일 단독 및 정상→빈 파일→정상이다. 후속 정상 파일 출력과 최종 종료 상태 1을 확인했다.
+- 디렉터리는 경고와 종료 상태 1이 올바르지만 도구명 nm/ft_nm 차이로 엄격 비교에서는 FAIL이다.
+- 추가 5건(92건 집계 밖): -- 종료 구분·옵션만 지정·복수 파일 뒤 옵션은 PASS. 미지원 긴 옵션과 a.out 부재는 진단 차이로 FAIL이며 종료 상태는 양쪽 모두 1이다.
+
+[회귀·메모리·빌드]
+- Day1: 8 PASS / 0 FAIL / 1 N/A. native ABI에서 SIZE_MAX+1 표현 불가로 해당 검사는 제외됐다.
+- Day2: 61 PASS / 0 FAIL.
+- Day3: 46 PASS / 0 FAIL / 0 UNAVAILABLE.
+- Day4: 76 PASS / 0 FAIL / 0 UNAVAILABLE.
+- 합계: 191 PASS / 0 FAIL / 1 N/A. ASan·UBSan 적용; 누수 검사는 detect_leaks=0으로 제외했다.
+- 전체 CLI ASan·UBSan: 정상 10개 + 오류/stripped 7개 + 공식 8개, 총 25건에서 sanitizer 오류·signal 종료·timeout 각각 0.
+- Makefile·src·inc만 별도 복사한 디렉터리에서 빌드 → 재실행 → clean → 빌드 → fclean → 빌드 모두 성공했다.
+- 별도 32비트 ABI 검사는 앞선 전수 실행에서 Bad system call 환경 오류로 런타임 미실행이었으며, 이번 수정 후 재실행하지 않았다.
+
+[남은 항목]
+- stripped 파일은 종료 0·빈 stdout이 일치하지만 no symbols 진단이 없다. 다음 수정 대상으로 남긴다.
+- 없는 파일·권한 오류 등의 진단 문구 및 도구명 차이, 공식 손상 입력의 진단·BFD plugin 출력 차이가 남는다.
+- 잘린 ELF는 GNU nm 종료 0, ft_nm 종료 1이다. plugin 동작이 포함된 차이이므로 비교를 위해 손상 입력을 무조건 수용하지 않는다.
+- 누수 검사 제외 및 제한된 입력 범위를 전체 자원 안전성 검증 완료로 해석하지 않는다.
+
+[기록 위치]
+- 통합 상세: /tmp/nm-day5-20261029/results.json
+- 통합 요약: /tmp/nm-day5-20261029/summary.log
+- 회귀 로그: /tmp/nm-day5-20261029/regression-full.log
+- 전체 CLI ASan·UBSan: /tmp/nm-day5-20261029/sanitized.json
+- 정리 경로·빌드 검사: /tmp/nm-day5-20261029/audit.log 및 build-cycle.json
+- 임시 경로의 장기 보존은 보장하지 않는다.
+- 이번 기록 요청에서는 edit.log만 추가했으며 코드 변경이나 테스트 재실행은 하지 않았다.

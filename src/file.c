@@ -18,7 +18,11 @@ int	open_file(const char *filename)
 
 int	close_file_error(int fd)
 {
+	int saved_errno;
+
+	saved_errno = errno;
 	close(fd);
+	errno = saved_errno;
 	return (-1);
 }
 
@@ -30,11 +34,15 @@ int	check_file_size(int fd, t_file *file)
 		return (-1);
 	if (fstat(fd, &st) == -1)
 		return (-1);
+	if (S_ISDIR(st.st_mode))
+		return (FILE_DIRECTORY);
 	if (st.st_size < 0)
 		return (-1);
 	if ((uintmax_t)st.st_size > (uintmax_t)(SIZE_MAX))
 		return (-1);
 	file->f_size = (size_t)st.st_size;
+	if (file->f_size == 0)
+		return (FILE_EMPTY);
 	return (0);
 }
 
@@ -57,13 +65,18 @@ void	cleanup_file(t_file *file)
 int	handle_file(const char *filename, t_file *file)
 {
 	int fd;
+	int status;
 
 	fd = open_file(filename);
 	if (fd < 0)
 	return (-1);
 	init_file(file);
-	if (check_file_size(fd, file) < 0)
-		return (close_file_error(fd));
+	status = check_file_size(fd, file);
+	if (status < 0)
+	{
+		close_file_error(fd);
+		return (status);
+	}
 	if (map_file(fd, file) < 0)
 		return (close_file_error(fd));
 	strlcpy(file->f_name, filename, PATH_MAX);
