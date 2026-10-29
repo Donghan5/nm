@@ -13,8 +13,6 @@ int	open_file(const char *filename)
 	int fd;
 
 	fd = open(filename, O_RDONLY);
-	if (fd < 0)
-		perror("Error opening file");
 	return (fd);
 }
 
@@ -50,7 +48,7 @@ int	map_file(int fd, t_file *file)
 
 void	cleanup_file(t_file *file)
 {
-	if (file->f_data)
+	if (file->f_data && file->f_data != MAP_FAILED)
 		munmap(file->f_data, file->f_size);
 	file->f_data = NULL;
 	file->f_size = 0;

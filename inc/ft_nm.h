@@ -10,7 +10,8 @@
 # include <stdlib.h> // for qsort
 # include <string.h> // for strncmp, memcpy
 # include <stdio.h> // for perror
-# include <error.h> 
+# include <error.h>
+# include <errno.h> // for errno
 # include <sys/stat.h>
 # include <sys/mman.h>
 # include <elf.h>

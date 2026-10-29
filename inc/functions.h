@@ -7,9 +7,7 @@ void cleanup_file(t_file *file);
 void init_file(t_file *file);
 
 // error.c
-void	cleanup_and_exit(t_file *file, const char *msg);
-int     handle_exit_with_error_and_cleanup(const char *message, t_file *file, t_symbol *symbols);
-int     handle_exit_with_error(const char *message);
+int report_error(const char *filename, const char *message);
 
 
 // elf_ident.c
