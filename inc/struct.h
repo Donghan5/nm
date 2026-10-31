@@ -22,6 +22,8 @@ typedef struct s_symbol
 
     char s_name[PATH_MAX];
     char s_code;
+
+    bool s_extended_index;
 } t_symbol;
 
 /* Structure to hold file information */
@@ -47,5 +49,27 @@ typedef struct s_string_table
     const char  *data;
     size_t      size;
 }   t_string_table;
+
+typedef struct s_collect32
+{
+	t_section_table	table;
+	Elf32_Shdr		symtab;
+	Elf32_Shdr		strtab;
+	Elf32_Shdr		sub_table;
+	size_t			entry_count;
+	uint32_t		sub_index;
+	bool			found;
+} t_collect32;
+
+typedef struct s_collect64
+{
+	t_section_table	table;
+	Elf64_Shdr		symtab;
+	Elf64_Shdr		strtab;
+	Elf64_Shdr		sub_table;
+	size_t			entry_count;
+	uint32_t		sub_index;
+	bool			found;
+} t_collect64;
 
 #endif // STRUCT_H

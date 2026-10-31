@@ -1,37 +1,31 @@
 # Tests
 
-| Day | Run | Documentation |
-|---|---|---|
-| 1 | `make test-1` / `make test-1-32` | [File handling](day1/README.md) |
-| 2 | `make test-2` | [ELF parsing](day2/DAY2.md) |
-| 3 | `make test-3` | [Symbol collection](day3/DAY3.md) |
-| 4 | `make test-4` | [Symbol classification and output](day4/DAY4.md) |
-
-Each day directory contains its test runner, fixtures, and documentation.
-
-Day 1-3 link the current project sources against libc. They do not require a
-`libft/` directory; `memcpy`, `strlen`, and `strlcpy` are libc calls in the
-current implementation. The host libc must provide `strlcpy` for Day 1 and the CLI.
-
-The default sanitizer selection is `address,undefined`. Day 1-3 accept
-`NM_TEST_SANITIZERS=address|undefined|address,undefined|none`, with optional
-per-runner overrides `DAY1_SANITIZERS`, `DAY2_SANITIZERS`, and `DAY3_SANITIZERS`.
-Day 4 uses the existing `DAY4_SANITIZERS` setting. No automatic fallback occurs.
-Omitted checks are not passes; Day 1-3 print explicit SKIP messages.
-
-On the current host, GCC's UBSan linker script references the missing
-`/usr/lib64/libubsan.so.1.0.0`. Clang's standalone UBSan runtime is also absent.
-Full UBSan verification requires a matching runtime installed in the environment.
-Until then, run the available ASan checks explicitly:
+Day1~4 회귀는 [days_test](days_test/README.md)로 통합했다.
+필요한 fixture와 비교기는 `days_test/fixtures/`, 이전 범위·실행 기록은
+`days_test/reference/`에 보존했다. 기존 `day1`~`day4` 폴더와 일차별 Makefile 명령은 제거했다.
 
 ```sh
-NM_TEST_SANITIZERS=address ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 \
-    make test-1 test-2 test-3 CC=/usr/bin/gcc
+make days_test CC=/usr/bin/gcc
+# 32비트 검사를 필수로 하고 상세 결과 저장
+CC=/usr/bin/gcc python3 tests/days_test/run.py --require-32 --report /tmp/days-test.json
 ```
 
-`detect_leaks=0` is needed in the current traced environment because
-LeakSanitizer reports that it cannot run under ptrace. The runners preserve
-caller-supplied ASAN_OPTIONS/UBSAN_OPTIONS; leak detection remains enabled by
-default. Restore the defaults on a host with the required runtime and leak
-checking support. The separate `test-1-32` target remains sanitizer-free and
-requires 32-bit libc development headers/libraries.
+총 194건: 경계·오류 검사, 정상 대조군, 실제 ELF32/64 참조 및 출력 비교.
+기본은 ASan·UBSan·누수 검사이며, 실제 32비트 크기 변환 3건은 sanitizer 없이 실행한다.
+기존 native N/A였던 SIZE_MAX+1 거부도 실제 ABI로 검증한다.
+
+`NM_TEST_SANITIZERS=address|undefined|address,undefined|none` 및
+`ASAN_OPTIONS`·`UBSAN_OPTIONS`를 지원한다. 생략된 검사는 통과로 계산하지 않는다.
+
+현재 샌드박스는 32비트 실행과 LeakSanitizer를 제한하므로 지원되는 환경에서 실행한다.
+누수 검사를 명시적으로 제외하려면:
+
+```sh
+ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 make days_test CC=/usr/bin/gcc
+```
+
+ABI 미지원 시 3 SKIP(종료 2), `--require-32` 사용 시 FAIL이다.
+32비트 libc 개발 파일과 실행 지원이 필요하다. libc의 strlcpy도 필요하다.
+
+`eval_test/`는 학교 공식 입력 원본이며 변경하지 않았다.
+Day5 전용 검사는 현재 임시 스크립트로 실행하며 저장소 등록은 별도 작업이다.

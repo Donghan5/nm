@@ -35,10 +35,19 @@ int symbol_type(t_symbol *symbol, t_section_table *section);
 
 // symbol_collect.c
 bool get_elf_section(const t_file *file, t_symbol **symbols, size_t *count);
+bool collect_elf32_section(const t_file *file, t_symbol **symbols, size_t *count);
+bool collect_elf64_section(const t_file *file, t_symbol **symbols, size_t *count);
+bool check_symbol_section_index(uint32_t index, size_t section_count);
 
 // sort_symbols.c
 void sort_symbols(t_symbol *symbols, size_t count);
 
 // print_symbols.c
 void print_symbols(t_symbol *symbols, size_t count);
+
+// symbol_tools.c
+bool return_false_with_free(t_symbol **symbols, size_t *count);
+void init_symbol(t_symbol *symbol);
+bool check_symbol_section_index(uint32_t index, size_t section_count);
+
 #endif

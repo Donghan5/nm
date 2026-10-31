@@ -58,6 +58,64 @@ static int parse_flags(int argc, char **argv)
 	return (file_count);
 }
 
+static int check_payload_range(const t_file *file, uint32_t type,
+	uint64_t offset, uint64_t size)
+{
+	bool invalid_range;
+
+	if (type == SHT_NULL || type == SHT_NOBITS)
+		return (0);
+	
+	invalid_range = (offset > SIZE_MAX || size > SIZE_MAX);
+	if (!invalid_range)
+		invalid_range = !check_common_range(file, (size_t)offset, (size_t)size);
+	if (!invalid_range)
+		return (0);
+	if (type == SHT_NOTE && size > 0)
+		return (-2);
+	return (1);
+}
+
+static int check_section_payload(const t_section_table *table, size_t index)
+{
+	const unsigned char *data;
+	Elf32_Shdr section32;
+	Elf64_Shdr section64;
+
+	data = table->file->f_data;
+	if (data[EI_CLASS] == ELFCLASS32)
+	{
+		if (!read_elf32_section(table, index, &section32))
+			return (-1);
+		return (check_payload_range(table->file, section32.sh_type,
+				section32.sh_offset, section32.sh_size));
+	}
+	if (!read_elf64_section(table, index, &section64))
+		return (-1);
+	return (check_payload_range(table->file, section64.sh_type,
+			section64.sh_offset, section64.sh_size));
+}
+
+static int check_section_payloads(const t_section_table *table)
+{
+	size_t index;
+	int status;
+	int warning;
+
+	index = 0;
+	warning = 0;
+	while (index < table->count)
+	{
+		status = check_section_payload(table, index);
+		if (status < 0)
+			return (status);
+		if (status > 0)
+			warning = 1;
+		index++;
+	}
+	return (warning);
+}
+
 static int process_file(const char *filename, bool show_filename)
 {
 	t_file file;
@@ -84,13 +142,21 @@ static int process_file(const char *filename, bool show_filename)
 			fprintf(stderr, "ft_nm: Warning: '%s' is a directory\n", filename);
 			return (-1);
 		}
-		return (report_error(filename, strerror(saved_errno)));
+		if (saved_errno == ENOENT)
+		{
+			fprintf(stderr, "ft_nm: '%s': No such file or directory\n", filename);
+			return (-1);
+		}
+		else if (saved_errno == EACCES)
+			return (report_error(filename, "Permission denied"));
+		else
+			return (report_error(filename, strerror(saved_errno)));
 	}
 
 	if (!get_elf_section(&file, &symbols, &count))
 	{
 		cleanup_file(&file);
-		return (report_error(filename, "Could not read ELF symbols"));
+		return (report_error(filename, "file format not recognized"));
 	}
 
 	data = file.f_data;
@@ -113,6 +179,18 @@ static int process_file(const char *filename, bool show_filename)
 		}
 	}
 
+	file_status = check_section_payloads(&table);
+	if (file_status < 0)
+	{
+		free(symbols);
+		cleanup_file(&file);
+		if (file_status == -2)
+			return (report_error(filename, "file format not recognized"));
+		return (report_error(filename, "Could not read section payload headers"));
+	}
+	if (file_status > 0)
+		fprintf(stderr, "ft_nm: warning: %s has a section extending past end of file\n",
+			filename);
 	i = 0;
 	while (i < count)
 	{
@@ -124,6 +202,8 @@ static int process_file(const char *filename, bool show_filename)
 		}
 		i++;
 	}
+	if (count == 0)
+		fprintf(stderr, "ft_nm: %s: no symbols\n", filename);
 	if (show_filename)
 		printf("\n%s:\n", filename);
 	print_symbols(symbols, count);

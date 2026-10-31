@@ -22,6 +22,8 @@ static bool    set_symbol_type_by_shndx(t_symbol *symbol)
 {
     if (symbol->s_bind == STB_WEAK)
         check_and_set_weak_symbol(symbol);
+    else if (symbol->s_extended_index)
+        return (false);
     else if (symbol->s_shndx == SHN_UNDEF)
         symbol->s_code = 'U';
     else if (symbol->s_shndx == SHN_ABS)

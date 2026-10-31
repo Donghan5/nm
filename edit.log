@@ -629,3 +629,21 @@ symbol_type.c 구현은 수정하지 않았으며 컴파일 및 런타임 테스
 - 정리 경로·빌드 검사: /tmp/nm-day5-20261029/audit.log 및 build-cycle.json
 - 임시 경로의 장기 보존은 보장하지 않는다.
 - 이번 기록 요청에서는 edit.log만 추가했으며 코드 변경이나 테스트 재실행은 하지 않았다.
+
+
+[2026-10-30 — Day1~4 경계값 검사 days_test 통합]
+- native에서 N/A였던 SIZE_MAX+1 크기 초과 거부를 실제 32비트 ABI로 검증했다. 음수·최대값·초과값 3 PASS.
+- tests/days_test/run.py, README.md 및 make days_test 추가. 기존 C fixture·참조 비교기를 재사용해 경계·오류 계약별 실행과 결과 보고를 통합했다. 기존 테스트는 유지했다.
+- 샌드박스 밖에서 --require-32 및 기본 ASan·UBSan·누수 검사로 194 PASS / 0 FAIL / 0 SKIP. 32비트 변환 3건은 sanitizer 제외.
+- tests/README.md의 환경 정보를 갱신하고 milestone.md에 검증 결과·누수 검사 결과를 반영했다.
+- 상세 결과: /tmp/nm-days-test-20261030.json. 임시 결과의 장기 보존은 보장하지 않는다.
+- 구현 src/inc는 이번 통합 작업에서 수정하지 않았다.
+
+
+[2026-10-30 — 기존 Day1~4 폴더 제거 및 Day5 완료 범위 갱신]
+- days_test가 기존 폴더를 참조하므로 필요한 C/어셈블리 fixture·비교기 10개를 tests/days_test/fixtures로 이동하고 모든 실행 경로를 갱신했다.
+- 상세 문서 4개는 tests/days_test/reference로 보존했다. 기존 일차별 폴더·Bash runner와 미사용 tests/sanitizers.sh를 제거했다.
+- Makefile에서 test-1/test-1-32/test-2/test-3/test-4 및 PHONY 항목 제거. make days_test를 단일 진입점으로 유지했다.
+- 제거 후 샌드박스 밖에서 make days_test CC=/usr/bin/gcc: 194 PASS / 0 FAIL / 0 SKIP. 32비트 3건 외 ASan·UBSan·LeakSanitizer 적용.
+- milestone.md에 .shstrtab 검증 80 PASS와 heap 누수 검사 완료를 별도 체크 항목으로 추가했다. Day5 총 34개 중 28개 완료 / 6개 미완료. 일반 섹션 전체 검증·심볼 SHN_XINDEX·강제 실패 주입 등은 미완료로 유지했다.
+- 구현 src/inc와 공식 tests/eval_test 입력은 이번 정리에서 수정하지 않았다.

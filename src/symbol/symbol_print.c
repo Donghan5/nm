@@ -22,7 +22,7 @@ static void print_symbols_for_64(t_symbol *symbols, size_t count)
         if (check_symbols_print(&symbols[i]))
         {
             value = symbols[i].s_addr;
-            if (symbols[i].s_shndx == SHN_COMMON)
+            if (!symbols[i].s_extended_index && symbols[i].s_shndx == SHN_COMMON)
                 value = symbols[i].s_size;
             if (symbols[i].s_shndx == SHN_UNDEF)
                 printf("%*s %c %s\n", 16, "", symbols[i].s_code, symbols[i].s_name);
@@ -45,7 +45,7 @@ static void print_symbols_for_32(t_symbol *symbols, size_t count)
         if (check_symbols_print(&symbols[i]))
         {
             value = symbols[i].s_addr;
-            if (symbols[i].s_shndx == SHN_COMMON)
+            if (!symbols[i].s_extended_index && symbols[i].s_shndx == SHN_COMMON)
                 value = symbols[i].s_size;
             if (symbols[i].s_shndx == SHN_UNDEF)
                 printf("%*s %c %s\n", 8, "", symbols[i].s_code, symbols[i].s_name);

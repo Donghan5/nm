@@ -137,6 +137,59 @@ bool read_elf32_symbol(const t_file *file, const Elf32_Shdr *symtab, size_t sym_
     return (true);
 }
 
+bool check_elf32_section_names(const Elf32_Ehdr *header, t_section_table *section_table)
+{
+    Elf32_Shdr shstrtab;
+    const unsigned char *data;
+    size_t index;
+
+    index = header->e_shstrndx;
+    if (index == SHN_UNDEF)
+        return (true);
+
+    if (index == SHN_XINDEX)
+    {
+        if (!read_elf32_section(section_table, 0, &shstrtab))
+            return (false);
+        index = shstrtab.sh_link;
+        if (index < SHN_LORESERVE)
+            return (false);
+    }
+    if (!read_elf32_section(section_table, index, &shstrtab))
+        return (false);
+    if (!check_common_range(section_table->file, shstrtab.sh_offset, shstrtab.sh_size))
+        return (false);
+
+    if (shstrtab.sh_type != SHT_STRTAB)
+        return (false);
+
+    index = 0;
+    if (shstrtab.sh_size > 0)
+    {
+        data = (const unsigned char *)section_table->file->f_data + shstrtab.sh_offset;
+        if (data[0] != '\0' || data[shstrtab.sh_size - 1] != '\0')
+            return (false);
+    }
+    while (index < section_table->count)
+    {
+        // check strtab section name
+        Elf32_Shdr section;
+
+        if (!read_elf32_section(section_table, index, &section))
+            return (false);
+        if (shstrtab.sh_size == 0)
+        {
+            if (section.sh_name != 0)
+                return (false);
+        }
+        else if (!get_elf32_string(section_table->file, &shstrtab, section.sh_name))
+            return (false);
+            
+        index++;
+    }
+    return (true);
+}
+
 /* Success return 0, failure return -1 */
 int get_elf32_section_table(const t_file *elf, t_section_table *section_table)
 {
@@ -194,5 +247,7 @@ int get_elf32_section_table(const t_file *elf, t_section_table *section_table)
     section_table->count = count;
     section_table->offset = header.e_shoff;
     section_table->file = elf;
+    if (!check_elf32_section_names(&header, section_table))
+        return (-1);
     return (0);
 }

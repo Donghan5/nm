@@ -1,3 +1,5 @@
+> 이 문서는 통합 이전 검사 범위와 실행 기록이다. 이전 명령 대신 현재 [days_test 실행법](../README.md)을 사용한다.
+
 # Day 2 ELF Tests
 
 Run `make test-2`. Requirements: Linux on an x86 little-endian host, a C compiler with AddressSanitizer and UndefinedBehaviorSanitizer, and `timeout`.
