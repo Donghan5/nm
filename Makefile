@@ -35,8 +35,17 @@ re: fclean
 	$(MAKE) all
 
 days_test:
-	CC="$(CC)" python3 tests/days_test/run.py
+	CC="$(CC)" bash tests/days_test/run.sh
+
+lifetime_test:
+	CC="$(CC)" bash tests/days_test/lifetime/run.sh
+
+eval_test:
+	CC="$(CC)" bash tests/eval_test/run.sh
+
+eval-auto:
+	CC="$(CC)" python3 eval-auto/run.py $(EVAL_AUTO_FLAGS)
 
 -include $(DEPS)
 
-.PHONY: all clean fclean re days_test
+.PHONY: all clean fclean re days_test lifetime_test eval_test eval-auto

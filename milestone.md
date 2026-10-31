@@ -1,20 +1,20 @@
 # ft_nm 구현 마일스톤
 
-최종 갱신: 2026-10-30. 저장소 소스와 최신 Day5 검사 기준 및 실행 결과 기준. 날짜는 실제 경과 시간이 아니라 구현 순서상의 일차를 뜻한다.
+최종 갱신: 2026-10-31. 저장소 소스와 최신 Day5 검사 기준 및 실행 결과 기준. 날짜는 실제 경과 시간이 아니라 구현 순서상의 일차를 뜻한다.
 
 ## 현재 위치
 
-**Day5 주요 구현·회귀 검증 완료, 별도 추가 검사 단계 진입 전.** 현재 유지한 비교 67건과 손상 입력 거부 19건은 모두 통과했다. 진단 문구·도구명만 비교하던 6건은 사용자 요청으로 제외했다. 따라서 과거 엄격 비교 92건 전체 통과를 뜻하지 않는다.
+**Day5 구현·최종 회귀 결과 정리 완료, 설명 준비 2항목 남음.** 현재 유지한 비교 67건과 손상 입력 거부 19건은 모두 통과했다. 진단 문구·도구명만 비교하던 6건은 사용자 요청으로 제외했다. 따라서 과거 엄격 비교 92건 전체 통과를 뜻하지 않는다.
 
 - 형식·출력: ELF32/64 .o·정적 실행 파일·PIE·.so와 C 실행 파일, 복수 파일 헤더·구분 빈 줄 검증 완료.
-- 인자·옵션: 기본 a.out, -r/-p 및 우선순위, 결합 옵션, 파일 뒤 옵션과 -- 처리 확인. 긴 미지원 옵션·a.out 부재는 추가 검사에서 진단 차이 2건이 남는다.
+- 인자·옵션: 기본 a.out, -r/-p 및 우선순위, 결합 옵션, 파일 뒤 옵션과 -- 처리 확인. 긴 미지원 옵션·a.out 부재는 합의한 오류 거부 기준으로 통과했다.
 - 오류·정리: 파일명 포함 단일 진단, ELF 오류의 Success 오출력 제거, 오류 경로의 배열·매핑 해제, MAP_FAILED 방어, errno 보존 완료. 빈 파일·디렉터리 명시적 구분과 stripped의 no symbols 안내도 반영했다.
-- 회귀: days_test로 Day1~4를 경계·오류 계약별로 통합했다. 최신 194 PASS / 0 FAIL / 0 SKIP. 기존 native N/A 크기 초과 분기는 실제 32비트 ABI에서 검증했다. 32비트 3건 외에는 ASan·UBSan·누수 검사를 적용했다.
+- 현재 경량 회귀: Bash days_test 97 PASS, lifetime_test 16 PASS. 실제 32비트 경계 2건 외에는 ASan·UBSan·누수 검사를 적용했다. 과거 194건/96건 실행 범위와 구분하며 Python 실행기·비교기는 제거했다.
 - 제출 재현: Makefile·src·inc만 복사한 디렉터리에서 빌드·clean·fclean 후 재빌드 성공. 별도 OS/학교 환경은 미검증이다.
 
-**현재 진행:** 추가 인자 검사 5건은 동작 기준으로 모두 PASS다. 손상 입력 보강 192건도 PASS이며 아래 Day5 항목 4·5·6을 완료 처리했다. 이후 .shstrtab·heap 누수 검증을 별도 완료 항목으로 추가해 현재 총 34개 중 28개 완료 / 6개 미완료다.
+**현재 진행:** 추가 인자 검사 5건은 동작 기준으로 모두 PASS다. 손상 입력 보강 192건도 PASS이며 아래 Day5 항목 4·5·6을 완료 처리했다. 이후 .shstrtab·heap 누수 검증을 별도 완료 항목으로 추가해 현재 총 34개 중 32개 완료 / 2개 미완료다.
 
-**잔여 범위:** .shstrtab 이외 일반 섹션 payload 정책·검증, 심볼 st_shndx의 SHN_XINDEX 지원, 동일 이름 정렬, fstat/mmap 실패 강제 주입·모든 매핑 수명 검증, 구두 설명. .shstrtab 검증과 실행 가능한 경로의 heap 누수 검사는 완료했다. 별도 32비트 ABI는 샌드박스 밖에서 3 PASS로 확인했다. 이 항목들이 남아 Day5 전체는 진행 중으로 유지한다.
+**잔여 범위:** 처리 흐름과 구현 세부 설명 두 항목이다. 최종 검사 결과 정리를 완료했다. 동일 이름 심볼 등 사례 확장은 240건 비교로 완료했다. payload·심볼 확장 index와 명시한 fstat/mmap 실패·매핑 수명 검사는 완료했다. malloc 실패나 close/munmap 자체 실패 복구 등 이번 검증 범위 밖 항목까지 검증 완료를 뜻하지 않는다. 보너스는 사용자 결정으로 현재 -r/-p 범위에서 중단하며 추가 -a/-g/-u를 진행하지 않는다.
 
 ## 전체 일정과 현재 상태
 
@@ -24,7 +24,7 @@
 | 2일 차 | ELF 헤더와 섹션 테이블 검증 | 필요한 구조를 파일 범위 밖 접근 없이 탐색 | 주요 구현·61개 테스트 통과; 섹션 payload 검증 잔여 |
 | 3일 차 | 심볼 테이블과 연결된 문자열 테이블 읽기 | 작은 `.o`에서 심볼 이름·값·속성 추출 | 기본 범위 완료: 46 PASS; SHN_XINDEX 해석 미지원 |
 | 4일 차 | 심볼 종류 판정, 기본 필터·정렬·출력 | 작은 입력에서 시스템 `nm`과 출력 일치 | 분류 확장 회귀 완료: 76 PASS / 0 FAIL / 0 UNAVAILABLE |
-| 5일 차 — 하루 통합 | 기존 5~7일 차: 필수 형식·인자·오류·메모리 검증, 보너스 -r/-p, 학교 공식 테스트, 제출 재현·설명 | 필수·보너스 출력 비교, 공식 바이너리 검증과 회귀 검사, 새 환경 빌드 및 설명 | 주요 구현·회귀 완료: 비교 67 PASS + 거부 19 PASS, 진단 비교 6건 제외; 추가 검사 5 PASS, 손상 입력 보강 192 PASS; 28/34 완료, 잔여 6항목 |
+| 5일 차 — 하루 통합 | 기존 5~7일 차: 필수 형식·인자·오류·메모리 검증, 보너스 -r/-p, 학교 공식 테스트, 제출 재현·설명 | 필수·보너스 출력 비교, 공식 바이너리 검증과 회귀 검사, 새 환경 빌드 및 설명 | 주요 구현·회귀 완료: 비교 67 PASS + 거부 19 PASS, 진단 비교 6건 제외; 추가 검사 5 PASS, 손상 입력 보강 192 PASS; 32/34 완료, 잔여 설명 2항목 |
 
 ## 목표 아키텍처
 
@@ -89,7 +89,7 @@ main.c: 입력 결정 → 파일별 처리 → 최종 종료 상태 집계
 
 현재 테스트는 합성 바이트 fixture로 ELF32·ELF64 getter와 reader를 연결한 검사다. 실제 실행 파일·공유 라이브러리의 완전한 유효성이나 전체 nm 출력을 검증한 것은 아니다. 테스트는 네이티브 ABI에서 두 파일 형식을 읽으며, 32비트 실행 프로그램의 ELF64 축소 변환 경로는 별도 실행 검증이 필요하다.
 
-세부 범위와 반환 계약은 `tests/days_test/reference/elf_parsing.md`에 기록했다. 61개 통과를 2일 차 전체 완료로 확대하지 않는다. ELF32 테이블 해석은 당초 5일 차 계획보다 먼저 구현됐으며, 심볼·출력 연결은 Day4에서 완료했다.
+세부 범위와 반환 계약은 `tests/README.md`에 기록했다. 61개 통과를 2일 차 전체 완료로 확대하지 않는다. ELF32 테이블 해석은 당초 5일 차 계획보다 먼저 구현됐으며, 심볼·출력 연결은 Day4에서 완료했다.
 
 ### 2일 차 잔여 작업 — 일반 섹션 payload 검증
 
@@ -118,7 +118,7 @@ main.c: 입력 결정 → 파일별 처리 → 최종 종료 상태 집계
 
 완료 범위: 네이티브 실행 프로그램으로 두 ELF 형식의 기본 수집 경로를 검증했다. 46개 통과가 SHN_XINDEX 지원이나 최종 nm 출력 일치를 뜻하지 않는다. 이름이 고정 배열을 초과하면 현재 구현은 거부하며, 이는 모든 유효한 긴 이름을 지원한다는 뜻이 아니다. 32비트 ABI의 ELF64 축소 경로, 강제 할당 실패 등은 추가 검증 대상이다.
 
-세부 테스트와 제한: `tests/days_test/reference/symbol_collection.md`. 합성 입력은 44개이며, 실제 .o 비교 2개를 합쳐 46개다. getter/reader/수집/검증의 실제 구현을 연결하고 미완성 분류 코드는 링크하지 않는다.
+세부 테스트와 제한: `tests/README.md`. 합성 입력은 44개이며, 실제 .o 비교 2개를 합쳐 46개다. getter/reader/수집/검증의 실제 구현을 연결하고 미완성 분류 코드는 링크하지 않는다.
 
 ### 4일 차 — 기본 범위 완료: 비교 가능한 nm 출력
 
@@ -142,7 +142,7 @@ DAY4_SANITIZERS=address ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 make test-4 
 
 분류 테스트에 ASan을 사용했다. 학교 환경에서 UBSan 런타임을 설치할 관리자 권한이 없어 UBSan은 제외했으며, 누수 검사도 비활성화했다. 기본 sanitizer 설정은 address,undefined를 유지하고 DAY4_SANITIZERS로 선택할 수 있다. CLI 출력 비교는 sanitizer 없는 일반 빌드를 사용하므로 전체 처리 흐름의 메모리 검사 완료를 뜻하지 않는다.
 
-완료 범위는 작은 ELF32·ELF64 .o와 명시된 분류 사례다. 모든 심볼 종류·동일 이름 정렬·실행 파일·공유 라이브러리·복수 인자의 정확성을 보장하지 않는다. 세부 범위는 `tests/days_test/reference/classification.md`에 기록했다.
+완료 범위는 작은 ELF32·ELF64 .o와 명시된 분류 사례다. 모든 심볼 종류·동일 이름 정렬·실행 파일·공유 라이브러리·복수 인자의 정확성을 보장하지 않는다. 세부 범위는 `tests/README.md`에 기록했다.
 
 ### 5일 차 — 하루 통합: 필수·보너스 검증과 제출 마무리
 
@@ -157,7 +157,7 @@ DAY4_SANITIZERS=address ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 make test-4 
 - [x] 파일별 오류 보고, 오류 후 다음 파일 처리, 최종 종료 상태를 검증한다. 없는 파일·권한 오류·디렉터리는 종료 1이며 혼합 입력의 후속 정상 출력도 확인했다. GNU nm과 진단 문구 완전 일치는 요구하지 않는다.
 - [x] 오류 보고·정리 함수가 파일별 처리 흐름을 중단하지 않는지 확인한다. 없는 파일 뒤 정상 파일, 정상·빈 파일·정상 조합에서 후속 출력과 최종 종료 상태 1을 확인했다.
 - [x] stripped fixture에서 빈 stdout, stderr의 no symbols 안내, 종료 0을 확인했다. 심볼 없는 모든 ELF 변형까지 검증한 것은 아니다.
-- [ ] 2일 차 섹션 payload 검사와 3일 차 SHN_XINDEX 잔여 항목을 보강한다.
+- [x] 일반 섹션 payload 범위·예외 검사와 심볼 SHN_XINDEX 연결을 보강했다. 범위 초과 일반 섹션은 경고 후 계속, 비어 있지 않은 NOTE는 거부한다. NOTE 26건 및 확장 index 192건을 확인했다. ELF32/64 수집부 리팩토링도 동작 보존·회귀 검사로 확인했다.
 - [x] ELF32/64 .shstrtab의 index/확장 index·타입·파일 범위·첫/마지막 NUL·각 sh_name·빈 테이블을 검증한다. 실제 확장 index와 경계/손상 입력의 일반·sanitizer 실행 80 PASS. 심볼 st_shndx 확장 지원과는 별개다.
 
 archive 필수 여부는 PDF 원문과 별도로 확인하며 임의로 확정하지 않는다.
@@ -165,10 +165,10 @@ archive 필수 여부는 PDF 원문과 별도로 확인하며 임의로 확정�
 #### 2. 정상·손상 입력과 메모리 검사 — 기존 Day6
 
 - [x] fstat 결과로 빈 파일·디렉터리를 매핑 전에 구분한다. 빈 파일은 무진단 종료 1, 디렉터리는 경고 후 종료 1이다. cleanup_file에서 MAP_FAILED를 제외하며 실제 호출 추적으로 잘못된 munmap이 없음을 확인했다.
-- [ ] fstat/mmap 실패 강제 주입과 모든 매핑 수명 검증을 보강한다. 아래 heap·fd 누수 검사 통과와 구분한다.
+- [x] fstat(EIO/EOVERFLOW)·mmap(ENOMEM/EACCES) 실패를 강제 주입하고 정상·검증 실패·혼합·100회 반복 입력의 fd/매핑 수명을 검사했다. 일반 및 ASan·UBSan·LSan 빌드 총 96 PASS. 아래 검증 범위·제외 항목을 따른다.
 - [x] heap 누수를 검사한다. 전체 CLI LSan·ASan·UBSan 103 PASS, Valgrind 대표 20건 heap 잔여 0바이트·열린 프로그램 fd 없음. 공식 header 1건은 Valgrind 자체 중단으로 검사 불가이며 LSan에서는 통과했다.
 - [x] LC_ALL=C에서 시스템 nm과 stdout·stderr·종료 상태를 각각 비교한다. 최신 검사는 비교 67건, 별도 손상 입력 거부 19건으로 구분한다. 과거 92건의 엄격 비교 결과와 직접 비교하지 않는다.
-- [ ] PIE/non-PIE, local/global, weak, common, 같은 이름 심볼 등 사례를 넓힌다.
+- [x] ELF32/64 .o·non-PIE·PIE·.so에서 local/global·weak·COMMON과 동일 이름 local 심볼(원래/역순 테이블)을 비교했다. 24개 fixture × 옵션 5종 × 일반/ASan·UBSan 빌드 = 240 PASS / 0 FAIL. 현재 GNU nm·libc·LC_ALL=C 범위 결과다.
 - [x] 없는 파일·빈 파일·디렉터리·권한 오류·여러 파일 혼합 입력을 검사한다. 오류 뒤 정상 파일의 헤더·심볼 출력과 최종 상태 1을 확인했다. 진단 문구·도구명만 다른 6건은 사용자 요청으로 비교에서 제외했다.
 - [x] ELF32/64 손상 fixture 32개에서 잘린 헤더·섹션 테이블, 테이블 offset/entry size, 심볼·문자열 payload 범위, sh_link, st_name/st_shndx, NUL 없는 문자열을 검사했다. 기본/-r/-p × 일반·ASan/UBSan 빌드 총 192건에서 오류 진단·빈 stdout·종료 1을 확인했다. 일반 섹션 전체 payload 검증과 SHN_XINDEX 지원은 별도 잔여 항목이다.
 - [x] 전체 CLI의 정상·오류 경로에 ASan을 적용한다. 최신 CLI LSan·ASan·UBSan 103건에서 오류·충돌·timeout 없음. 회귀 days_test도 실제 ABI 3건을 제외하고 누수 검사를 포함한다. 강제 할당 실패와 모든 매핑 수명 검증 완료를 뜻하지 않는다.
@@ -201,7 +201,7 @@ archive 필수 여부는 PDF 원문과 별도로 확인하며 임의로 확정�
 
 - [x] 같은 환경의 새 디렉터리에 Makefile·src·inc만 복사해 빌드한다. 빌드 성공; 별도 OS/학교 환경의 재현은 미검증이다.
 - [x] 새 디렉터리에서 빌드 → 재실행(재링크 없음) → clean → 빌드 → fclean → 빌드를 확인한다. 일반 빌드는 libft 없이 성공하며 Day1~3 테스트의 불필요한 libft 소스 의존성도 후속 정리에서 제거했다.
-- [ ] 필수·보너스·학교 공식 바이너리·정상·오류 회귀 결과를 최종 정리한다.
+- [x] 사용자와 합의한 필수·현재 -r/-p 범위·공식 입력·정상/오류 최종 회귀를 재실행하고 결과·제외 범위를 정리했다. 현재 경량 Bash 회귀 97건·수명 16건, 별도 Day5 91건·NOTE 26건·확장 index 192건·심볼 조합 240건 모두 PASS. PDF 전체 보너스 완료를 뜻하지 않는다.
 - [ ] fd와 매핑 수명, 검증 위치, 문자열 연결과 심볼 분류 근거를 설명한다.
 - [ ] ELF32/64 차이, COMMON 크기 출력, 정렬·플래그 우선순위, 종료 상태와 남은 제한을 설명한다.
 
@@ -374,6 +374,56 @@ Day4에 DYNAMIC·INIT_ARRAY·FINI_ARRAY·PREINIT_ARRAY·NOTE의 local/global 사
 - 경로 보정 임시 회귀 실행기로 194 PASS / 0 FAIL / 0 SKIP(실제 ABI 3건 외 기본 누수·ASan·UBSan), 확장 index 192 PASS를 재확인했다.
 - GNU nm과의 남은 차이: 이번 NOTE offset 손상은 GNU nm 종료 1, 현재는 경고 후 종료 0이다. NULL의 잘못된 offset은 명세의 비활성 섹션 예외로 무시해 GNU nm 경고와 다르다. NOTE 판정 보강은 이번 범위에서 완료하지 않았다.
 - 상세 자료: /tmp/nm-payload-20261031/checks.json, results.json, regression.json, xindex.log. 임시 자료의 장기 보존은 보장하지 않는다.
+
+#### 2026-10-31 — fstat/mmap 실패 주입·매핑 수명 검증 완료
+
+- tests/days_test/lifetime/run.py와 wrap.c, make lifetime_test를 추가했다. 실제 프로젝트 소스와 실제 CLI main을 실행하며 링크 시점에 open/close/fstat/mmap/munmap·분류·출력 호출을 계측한다. 구현 src/inc는 변경하지 않았다.
+- ELF32/64 각각 24개 시나리오를 일반·ASan/UBSan 빌드로 실행: 96 PASS / 0 FAIL. sanitizer 실행에는 샌드박스 밖에서 LeakSanitizer도 활성화했다. 56회 강제 실패가 실제 발생했음을 카운터로 확인했다.
+- 단일·첫/중간/마지막 실패·100개 반복 입력 중 실패, close의 errno 덮어쓰기에도 원래 오류 보존, 정상/빈/디렉터리/없는 파일/텍스트/손상 NOTE·문자열·index/stripped 이후 정상 파일 출력을 검사했다.
+- 모든 사례에서 open=close, 성공 mmap=munmap, 최대 동시 파일 매핑 1, MAP_FAILED·중복·주소/길이 불일치 해제 0. 분류·출력 시 매핑 유지도 확인했다.
+- 실제 /proc/self/fd 개수와 fixture 파일의 /proc/self/maps 항목을 CLI 호출 전후 비교해 잔여 자원 없음을 확인했다. 자원 감사 오류 0, sanitizer 보고·충돌·timeout 없음.
+- 각 프로세스 timeout 30초. 이 검사에서는 native ABI로 ELF32/64를 읽으며 실제 32비트 ABI 실행 검사는 기존 회귀와 별개다.
+- 검사 제외: malloc 실패, close/munmap 자체 실패 복구, 비동기 truncate, 모든 가능한 libc·커널 오류. 명시한 파일 처리 경로의 수명 검증 완료로 한정한다.
+- 자료: /tmp/nm-lifetime-full-20261031.json. 제한 환경 누수 제외 실행 결과는 /tmp/nm-lifetime-20261031.json이다. 임시 자료 장기 보존은 보장하지 않는다.
+- 사용자 결정에 따라 보너스는 현재 -r/-p까지만 유지한다. PDF의 전체 보너스 5개 완료를 주장하지 않는다.
+
+#### 2026-10-31 — 심볼 사례 확장 검사 완료
+
+- 실제 어셈블리로 ELF32/64 .o·non-PIE·PIE·.so 8개를 생성했다. global/local text·data·BSS·readonly, weak 함수·객체, absolute, COMMON을 포함한다. COMMON은 링크 결과에 따른 분류 변화도 시스템 nm과 비교했다.
+- 각 입력에서 local 심볼 6개의 이름을 하나로 통일한 변형과, 해당 local 심볼 레코드 순서를 뒤집은 변형을 추가했다. 원래 레코드의 값·binding·타입·section index는 유지하며, fixture에는 심볼 index를 참조하는 relocation이 없어 레코드 순서 변경으로 relocation을 손상시키지 않는다.
+- 총 24개 fixture × 기본/-r/-p/-r -p/-p -r × 일반/ASan·UBSan 빌드 = 240 PASS / 0 FAIL. stdout·stderr·종료 상태를 GNU nm 2.42와 완전 비교했다. LC_ALL=C 기준, 개별 timeout 10초.
+- 정상 입력 80 PASS, 동일 이름/원래 순서 80 PASS, 동일 이름/역순 80 PASS. 충돌·timeout·sanitizer 보고 0. 누수 검사는 이 전용 검사에서 제외했다.
+- 현재 libc의 qsort에서 관측한 결과이며, 다른 libc·locale·GNU nm 버전이나 동일 이름의 모든 binding 조합까지 검증한 것은 아니다. 동일 이름 정렬 차이가 발견되지 않아 구현 코드는 수정하지 않았다.
+- 임시 스크립트·요약·상세: /tmp/nm-symbol-cases-20261031/run.py, summary.log, results.json. 장기 보존은 보장하지 않는다.
+
+#### 2026-10-31 — 경량화 및 최종 회귀 결과 정리
+
+- 사용자 요청에 따라 기본 회귀 194건을 핵심 97건으로, 자원 수명 96건을 대표 16건으로 축소했다. 정상 대조군과 실제 nm 출력 비교, 음수/초과 크기, 잘린/잘못된 헤더, 문자열 범위/NUL, 심볼 길이·index·연결, 확장 index 성공·거부, .shstrtab·payload/NOTE/NOBITS 정책, 실패 주입·errno 보존·100회 반복 정리를 남겼다.
+- tests/days_test/run.py와 lifetime/run.py를 Bash run.sh로 교체했다. common.sh에서 빌드·로그·sanitizer·timeout을 공유한다. Python 비교기 2개와 전용 fixture, 과거 참고 문서 4개 및 미사용 레코드 dump 경로를 제거했다. 출력 비교는 GNU nm과 cmp를 사용한다. 테스트 실행에 Python 패키지는 필요하지 않다.
+- 새 확장 index 최소 fixture를 추가해 경량화로 최근 구현의 핵심 경계를 잃지 않도록 했다. 실행하지 않는 이전 사례는 현재 회귀 통과 근거로 사용하지 않는다.
+- 실행 결과(각 묶음은 중복 범위를 포함하므로 독립 항목 수로 합산하지 않음):
+
+| 최종 실행 | 결과 | 기준·제한 |
+|---|---|---|
+| Bash days_test | 97 PASS / 0 FAIL / 0 SKIP | 기본 ASan·UBSan·LSan, 실제 ABI 경계 2건만 sanitizer 제외 |
+| Bash lifetime_test | 16 PASS / 0 FAIL / 0 SKIP | ASan·UBSan·LSan, 대표 실패 주입·수명 감사 |
+| Day5 통합 및 추가 인자 | 91 PASS / 0 FAIL | 비교 67 + 별도 거부 19 + 추가 인자 5, 과도한 진단 비교 6건 제외 유지 |
+| NOTE 변형 | 26 PASS | 도구명 nm/ft_nm만 정규화 후 stdout·stderr·상태 비교 |
+| 확장 index | 192 PASS | 정상 출력 비교 및 명세 기반 손상 거부, 일반/ASan·UBSan, 누수 제외 |
+| 심볼 조합·동일 이름 | 240 PASS | 일반/ASan·UBSan, LC_ALL=C, 누수 제외 |
+| 제출 빌드 주기 | 6단계 성공 | src/inc/Makefile만 별도 복사 후 빌드·반복·clean·빌드·fclean·빌드 |
+
+- 실제 src 변경 없이 테스트·문서·Makefile 실행 명령만 변경했다. 공식 tests/eval_test 입력은 보존했다.
+- 경량 회귀 실행 로그: /tmp/nm-edge.SsT7WQ/results.tsv, 수명 검사: /tmp/nm-edge.EIvGOJ/results.tsv 및 *.audit.json. 최종 Day5: /tmp/nm-final-20261031/results.tsv·summary.log·note-results.json·build-cycle.json. 추가 재실행: /tmp/nm-light-final-xindex-20261031.log, /tmp/nm-light-final-symbols-20261031.log. 임시 자료 장기 보존은 보장하지 않는다.
+- Makefile의 days_test/lifetime_test는 새 Bash 경로를 사용한다. 과거 기록의 Python·일차별 명령은 현재 실행법이 아니다. 현행 실행법은 tests/README.md를 따른다.
+- 검증 한계: 임의의 모든 ELF·다른 libc/locale·할당 실패·close/munmap 자체 실패 복구·비동기 truncate·모든 BFD plugin 동작까지 보장하지 않는다. SHT_NULL의 무의미한 offset은 명세에 따라 무시하므로 GNU nm의 경고와 다를 수 있다. 보너스는 사용자 결정으로 -r/-p에서 중단했다.
+
+#### 2026-10-31 — eval_test 명령 및 단일 영어 테스트 가이드
+
+- make eval_test를 추가하고 tests/eval_test/run.sh에서 현재 소스를 sanitizer CLI로 새로 빌드한다. 공통 Bash 빌드·로그 설정을 재사용하며 공식 바이너리·C 소스 원본은 변경하지 않는다.
+- 공식 바이너리 8개 × 기본/-r/-p = 24건, C 소스 2개를 임시 실행 파일로 빌드한 비교 6건, 총 30 PASS / 0 FAIL / 0 SKIP. ASan·UBSan·LeakSanitizer를 활성화해 샌드박스 밖에서 확인했다.
+- 수용 입력은 stdout·stderr·종료 상태 완전 비교, 손상 입력 18건은 기존 합의한 별도 거부 기준이다. GNU nm의 BFD plugin 메시지를 복제하거나 엄격 비교로 통과했다고 주장하지 않는다. 로그: /tmp/nm-edge.IqUYnG/results.tsv 및 양쪽 출력·상태 파일.
+- tests 아래 README는 영어 tests/README.md 하나로 통합했다. days_test와 lifetime의 하위 README를 제거하고 실행법·97/16/30건 검사 범위·환경·제외 항목·로그를 상위 가이드에 반영했다.
 
 ## 다음 단계에 필요한 공부
 

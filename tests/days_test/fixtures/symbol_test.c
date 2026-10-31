@@ -31,47 +31,6 @@ static int fail(const char *message)
     return (1);
 }
 
-static int real_object(const char *path)
-{
-    FILE *stream = fopen(path, "rb");
-    t_file file = {0};
-    t_symbol *symbols = NULL;
-    size_t count = 0, i;
-    long length;
-    int result = 0;
-
-    if (!stream) return (fail("cannot open real object"));
-    if (fseek(stream, 0, SEEK_END) || (length = ftell(stream)) < 0
-        || fseek(stream, 0, SEEK_SET))
-    {
-        fclose(stream);
-        return (fail("cannot measure real object"));
-    }
-    file.f_size = (size_t)length;
-    file.f_data = malloc(file.f_size);
-    if (!file.f_data || fread(file.f_data, 1, file.f_size, stream) != file.f_size)
-    {
-        fclose(stream);
-        free(file.f_data);
-        return (fail("cannot read real object"));
-    }
-    fclose(stream);
-    if (!get_elf_section(&file, &symbols, &count)) result = fail("real object collection failed");
-    else for (i = 0; i < count; i++)
-    {
-        const unsigned char *name = (const unsigned char *)symbols[i].s_name;
-        printf("%zu %llu %llu %llu %llu %llu ", symbols[i].s_original_index,
-            (unsigned long long)symbols[i].s_arch, (unsigned long long)symbols[i].s_type,
-            (unsigned long long)symbols[i].s_bind, (unsigned long long)symbols[i].s_shndx,
-            (unsigned long long)symbols[i].s_addr);
-        while (*name) printf("%02x", *name++);
-        putchar('\n');
-    }
-    free(symbols);
-    free(file.f_data);
-    return (result);
-}
-
 int main(int argc, char **argv)
 {
     EH header = {0};
@@ -90,8 +49,7 @@ int main(int argc, char **argv)
     bool expected = true;
     int result = 0;
 
-    if (argc == 3 && !strcmp(argv[1], "object")) return (real_object(argv[2]));
-    if (argc != 2) return (fail("expected case name or object PATH"));
+    if (argc != 2) return (fail("expected case name"));
     name = argv[1];
     data = calloc(1, total);
     if (!data) return (fail("fixture allocation failed"));
