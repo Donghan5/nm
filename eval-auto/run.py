@@ -14,7 +14,9 @@ ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--require-32', action='store_true', help='compatibility: always required')
 parser.add_argument('--memory', action='store_true', help='compatibility: always enabled')
-parser.parse_args()
+parser.add_argument('--bonus', action='store_true',
+                    help='also verify implemented -r/-p bonus options')
+args = parser.parse_args()
 os.environ['LC_ALL'] = 'C'
 logs = Path(tempfile.mkdtemp(prefix='nm-eval-auto-'))
 work = logs / 'fixtures'
@@ -202,6 +204,34 @@ readonly_symbol: .long 3
         shutil.copyfile(work / valid[0], work / 'stripped')
         if build('OTHER.strip', ['strip', work / 'stripped']):
             compare('OTHER.stripped', ['stripped'])
+    if args.bonus:
+        # Reuse real ELF32/64 objects, executables and shared libraries.
+        # Compare raw output: sorting or whitespace normalization hides bugs.
+        for name in valid:
+            for label, options in [('r', ['-r']), ('p', ['-p']),
+                                   ('rp', ['-rp']), ('pr', ['-pr'])]:
+                compare(f'BONUS.{name}.{label}', options + [name])
+        if valid:
+            for label, options in [('separate-rp', ['-r', '-p']),
+                                   ('separate-pr', ['-p', '-r']),
+                                   ('repeat-r', ['-rr']), ('repeat-p', ['-pp'])]:
+                compare('BONUS.' + label, options + [valid[0]])
+            for flag in ('-r', '-p'):
+                label = flag[1:]
+                compare(f'BONUS.default.{label}', [flag])
+                compare(f'BONUS.multiple.{label}', [flag] + valid)
+                compare(f'BONUS.mixed.{label}',
+                        [flag, valid[0], 'missing', valid[-1]])
+                compare(f'BONUS.trailing.{label}', [valid[0], flag])
+                compare(f'BONUS.between.{label}',
+                        [valid[0], flag, valid[-1]])
+                compare(f'BONUS.stripped.{label}', [flag, 'stripped'])
+                compare(f'BONUS.malformed.{label}',
+                        [flag, school / 'header'], malformed=True)
+            # A dash-prefixed filename must become an operand after --.
+            shutil.copyfile(work / valid[0], work / '-r')
+            compare('BONUS.end-options', ['--', '-r'])
+            compare('BONUS.end-options-p', ['-p', '--', '-r'])
     for name in ('error_header', 'header_offset_error', 'header', 'header_copy',
                  'header_and_prog', 'header_and_prog_copy', 'unterminated_string', 'wrong_arch'):
         compare('ERR.' + name, [school / name], malformed=True)

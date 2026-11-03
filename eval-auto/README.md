@@ -150,3 +150,25 @@ ASan·UBSan·LeakSanitizer 대체 검사로 통과했다. SKIP 결과는 없다.
 이 실행은 LeakSanitizer의 ptrace 제한이 없는 환경에서 수행했다.
 사람 검토 항목은 위 대응표에 별도로 남아 있다.
 
+
+## 구현된 보너스 검사 (-r / -p)
+
+```sh
+make eval-auto-bonus
+# 동일한 직접 실행
+python3 eval-auto/run.py --bonus
+```
+
+기본 `make eval-auto`는 기존 mandatory 범위를 유지한다. 보너스 명령은
+mandatory 전체에 `BONUS.*` 검사를 추가하며 모든 실행에 동일한 메모리 검사를 적용한다.
+현재 구현된 `-r`, `-p`만 대상으로 하며 미구현 `-a`, `-g`, `-u`나 보너스 전체
+점수 획득을 검증하지 않는다.
+
+- ELF32/64 `.o`, 실행 파일, PIE, `.so`에서 `-r`, `-p`, `-rp`, `-pr` 비교.
+- 분리 옵션 `-r -p` / `-p -r`, 반복 옵션 `-rr` / `-pp` 비교.
+- 기본 `a.out`, 여러 파일, 없는 파일 혼합, stripped 파일과 손상 파일 처리.
+- 파일 뒤·파일 사이 옵션, `--` 뒤의 `-r` 파일명 처리.
+
+정상·일반 파일 오류는 GNU nm과 stdout/stderr/종료 상태를 기존 규칙으로 비교한다.
+손상 입력은 위 오류 fixture 정책을 적용한다. 정렬 결과의 순서와 공백은 그대로
+비교하며 `-p`와 `-r`의 우선순위도 기준 nm 결과로 검증한다.

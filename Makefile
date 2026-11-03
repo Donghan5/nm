@@ -46,6 +46,9 @@ eval_test:
 eval-auto:
 	CC="$(CC)" python3 eval-auto/run.py $(EVAL_AUTO_FLAGS)
 
+eval-auto-bonus:
+	CC="$(CC)" python3 eval-auto/run.py --bonus $(EVAL_AUTO_FLAGS)
+
 -include $(DEPS)
 
-.PHONY: all clean fclean re days_test lifetime_test eval_test eval-auto
+.PHONY: all clean fclean re days_test lifetime_test eval_test eval-auto eval-auto-bonus
