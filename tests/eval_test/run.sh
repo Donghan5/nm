@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# School fixtures remain read-only; generated binaries and logs live in /tmp.
+# School fixtures remain read-only; temporary comparison files are removed on exit.
 source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
 if [[ $# != 0 ]]; then printf 'Usage: bash tests/eval_test/run.sh\n' >&2; exit 1; fi
 if ! compile cli "${cli_sources[@]}"; then finish; fi
@@ -22,7 +22,19 @@ check_eval() {
             cmp -s "$TASK_TMP/$name.expectederr" "$TASK_TMP/$name.ft.err"; then valid=true; fi
     fi
     if grep -Eq 'Sanitizer|runtime error:' "$TASK_TMP/$name.ft.err"; then valid=false; fi
-    if "$valid"; then record PASS "$name"; else record FAIL "$name"; fi
+    local detail
+    if [[ "$mode" == exact ]]; then
+        detail="GNU nm comparison: stdout/stderr/exit match (nm=$refcode, ft_nm=$code)"
+    else
+        detail="Malformed ELF: reject with exit 1, empty stdout, filename diagnostic (nm=$refcode, ft_nm=$code)"
+    fi
+    if "$valid"; then
+        record PASS "$name" "$detail"
+    else
+        record FAIL "$name" "Expected: $detail"
+        diff -u "$TASK_TMP/$name.nm.out" "$TASK_TMP/$name.ft.out" || true
+        diff -u "$TASK_TMP/$name.nm.err" "$TASK_TMP/$name.ft.err" || true
+    fi
 }
 for file in error_header header_offset_error header header_copy header_and_prog \
     header_and_prog_copy unterminated_string wrong_arch; do
@@ -34,24 +46,42 @@ for file in error_header header_offset_error header header_copy header_and_prog 
         check_eval "$file-$option" "$mode" "${opts[@]}" "$ROOT/tests/eval_test/$file"
     done
 done
+# Compare supplied shared libraries without modifying the original files.
+for path in "$ROOT"/tests/eval_test/*.so; do
+    [[ -f "$path" ]] || continue
+    name=$(basename "$path")
+    for option in default r p rp pr rr pp r-p p-r; do
+        opts=()
+        case "$option" in default) ;; r-p) opts=(-r -p) ;; p-r) opts=(-p -r) ;; *) opts=("-$option") ;; esac
+        check_eval "$name-$option" exact "${opts[@]}" "$path"
+    done
+done
 # These two .c files are source inputs, not malformed ELF fixtures.
-for file in easy_test not_so_easy_test; do
-    if timeout 30s "${compiler[@]}" -Wall -Wextra -Werror "$ROOT/tests/eval_test/$file.c" \
-        -o "$work/$file" > "$TASK_TMP/build-$file.log" 2>&1; then
+for variant in easy_test not_so_easy_test-32 not_so_easy_test-64; do
+    file=easy_test
+    arch_flags=()
+    case "$variant" in
+        not_so_easy_test-32) file=not_so_easy_test; arch_flags=(-m32) ;;
+        not_so_easy_test-64) file=not_so_easy_test; arch_flags=(-m64) ;;
+    esac
+    if timeout 30s "${compiler[@]}" -Wall -Wextra -Werror "${arch_flags[@]}" "$ROOT/tests/eval_test/$file.c" \
+        -o "$work/$variant" > "$TASK_TMP/build-$variant.log" 2>&1; then
         for option in default r p; do
             opts=()
             [[ "$option" == default ]] || opts=("-$option")
-            check_eval "$file-$option" exact "${opts[@]}" "$work/$file"
+            check_eval "$variant-$option" exact "${opts[@]}" "$work/$variant"
         done
     else
-        record FAIL "build/$file"
-        cat "$TASK_TMP/build-$file.log"
+        record FAIL "build/$variant"
+        cat "$TASK_TMP/build-$variant.log"
     fi
 done
 # Main comparisons cover ELF32/64 objects, executables, PIE and shared libraries.
 for bits in 32 64; do
     if ! timeout 30s "${compiler[@]}" -m"$bits" -c "$ROOT/tests/eval_test/symbols.s" -o "$work/symbols$bits.o" > "$TASK_TMP/fixture$bits.log" 2>&1; then
-        record FAIL "build/symbols$bits"; continue
+        record FAIL "build/symbols$bits"
+        cat "$TASK_TMP/fixture$bits.log"
+        continue
     fi
     emulation=elf_x86_64
     [[ "$bits" == 64 ]] || emulation=elf_i386
@@ -60,6 +90,7 @@ for bits in 32 64; do
         case "$kind" in pie) flags=(-pie --no-dynamic-linker) ;; so) flags=(-shared) ;; esac
         if ! timeout 30s ld -m "$emulation" "${flags[@]}" -e zebra_text "$work/symbols$bits.o" -o "$work/$kind$bits" > "$TASK_TMP/link-$kind$bits.log" 2>&1; then
             record FAIL "build/$kind$bits"
+            cat "$TASK_TMP/link-$kind$bits.log"
         fi
     done
     for path in "$work/symbols$bits.o" "$work/exec$bits" "$work/pie$bits" "$work/so$bits"; do

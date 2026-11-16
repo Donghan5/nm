@@ -27,6 +27,7 @@ $(OBJ_DIR)/src/symbol/symbol_tools.o: CPPFLAGS += -include inc/ft_nm.h
 clean:
 	$(RM) $(OBJS) $(DEPS)
 	$(RM) $(SRCS:.c=.o) $(SRCS:.c=.d)
+	$(RM) build/demo32.o
 
 fclean: clean
 	$(RM) $(NAME)
@@ -43,8 +44,22 @@ lifetime_test:
 eval_test:
 	CC="$(CC)" bash tests/eval_test/run.sh
 
+demo: $(NAME)
+	CC="$(CC)" bash tests/demo.sh
+
+demo32: $(NAME) build/demo32.o
+	file build/demo32.o
+	@echo "GNU nm:"
+	LC_ALL=C nm build/demo32.o
+	@echo "ft_nm:"
+	LC_ALL=C ./$(NAME) build/demo32.o
+
+build/demo32.o: tests/eval_test/not_so_easy_test.c
+	mkdir -p build
+	$(CC) $(CFLAGS) -m32 -c $< -o $@
+
 test: eval_test
 
 -include $(DEPS)
 
-.PHONY: all clean fclean re edge_case_test lifetime_test eval_test test
+.PHONY: all clean fclean re edge_case_test lifetime_test eval_test test demo demo32

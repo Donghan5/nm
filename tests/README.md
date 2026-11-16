@@ -5,7 +5,7 @@ Python is not required. Run from the repository root:
 
 ```sh
 make test            # Main suite; alias for eval_test
-make eval_test       # 110 school, format, CLI and bonus checks
+make eval_test       # 122 school, shared-library, format, CLI and bonus checks
 make edge_case_test       # 75 edge checks
 make lifetime_test   # 16 failure-injection and resource-lifetime checks
 ```
@@ -17,8 +17,15 @@ The eight original school binaries are read-only. Each is tested with default,
 rejected inputs require exit 1, empty stdout and a filename-specific format error.
 GNU nm's BFD plugin diagnostics are not reproduced.
 
-The two school C sources are compiled and compared with GNU nm under the same
-three options. Generated ELF32/64 objects, executables, PIE and shared libraries
+Supplied `tests/eval_test/*.so` libraries (currently `libft_malloc.so`) are
+compared with GNU nm under default, `-r`, `-p`, `-rp`, `-pr`, `-rr`, `-pp`,
+`-r -p` and `-p -r`, requiring exact stdout, stderr and successful exit.
+
+The school easy_test.c is compiled with the compiler's default architecture.
+not_so_easy_test.c is compiled explicitly with -m32 and -m64, as required by the
+evaluation sheet. All three binaries are compared with GNU nm under default,
+-r and -p; unavailable multilib support is a build failure, not a skipped pass.
+Generated ELF32/64 objects, executables, PIE and shared libraries
 are compared under default, `-r`, `-p`, `-rp`, `-pr`, `-rr`, `-pp`, `-r -p` and
 `-p -r`. Comparisons preserve output order, whitespace and address padding.
 Additional cases cover multiple files, options after/between files, `--` protecting
@@ -44,6 +51,8 @@ mapping lifetime through classification and printing.
 Requires Bash, an x86 little-endian Linux host, C compiler, GNU nm/ld,
 coreutils (timeout/cmp), grep and /proc. libc must provide strlcpy. Actual 32-bit
 ABI boundary checks additionally need multilib libc and kernel support.
+The main evaluation's -m32 C build also requires multilib libc development files;
+the generated input binaries are inspected, not executed.
 
 ASan, UBSan and LeakSanitizer are enabled by default; only the two actual 32-bit
 ABI checks omit sanitizers. A ptrace-restricted sandbox can prevent LSan from
@@ -57,10 +66,27 @@ ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 make test
 
 Disabling sanitizers or leak detection removes that coverage. Missing 32-bit ABI
 support is reported as SKIP (or FAIL with --require-32), never PASS.
-Each runner prints PASS/FAIL/SKIP and a /tmp/nm-edge.* log directory containing
-results.tsv, build logs and runtime outputs; evaluation also saves both tools'
-exit statuses. Temporary binaries are removed on exit; logs are not permanent.
+Each runner prints each test's subject and PASS/FAIL/SKIP result directly to the
+terminal. Evaluation cases report the stdout/stderr/exit comparison or malformed
+input rejection rule, including both exit codes. Resource cases report input
+count, injected fault, audit errors and peak mappings. Failures show diagnostics
+and evaluation output differences. Final counts remain as a short overview.
+Comparison/build files exist only during execution and the entire temporary
+directory is removed on exit; no test logs or reports are retained.
 Exit 0 means pass, 1 failure, 2 skipped checks without failures.
+
+## Live demonstration
+
+```sh
+make demo
+```
+
+Builds ft_nm and temporary ELF32/64 objects, then shows actual shell commands,
+symbol output, diagnostics and exit codes. Demonstrates GNU nm versus ft_nm,
+default sorting, -r, -p, -rp priority, address widths, multiple files, continued
+processing after a missing file, malformed ELF rejection and default a.out.
+Expected error examples print exit 1 and the demonstration continues. This is a
+presentation command, not an assertion suite. Generated files are removed on exit.
 
 The former Python eval-auto runner was removed in favor of the main Bash suite.
 This reorganization does not claim equivalent coverage: its separate Valgrind,

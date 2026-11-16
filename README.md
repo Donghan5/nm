@@ -170,6 +170,8 @@ the general payload check.
 Run these commands from the repository root:
 
 ```sh
+make demo            # Show commands, actual output and exit codes
+make demo32          # Build an ELF32 object and show file type, GNU nm and ft_nm output
 make test            # Main evaluation suite (same as make eval_test)
 make edge_case_test       # 75 edge checks, including 2 actual 32-bit ABI checks
 make lifetime_test   # 16 fd/mapping lifetime and failure-injection scenarios

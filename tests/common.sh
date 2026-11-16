@@ -17,7 +17,7 @@ export UBSAN_OPTIONS=${UBSAN_OPTIONS:-halt_on_error=1:print_stacktrace=1}
 TASK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/nm-edge.XXXXXX")
 work="$TASK_TMP/build"
 mkdir "$work"
-trap 'rm -rf -- "$work"' EXIT
+trap 'rm -rf -- "$TASK_TMP"' EXIT
 passed=0 failed=0 skipped=0
 printf 'Sanitizers: %s\n' "$selection"
 [[ "$selection" == *address* ]] || printf 'SKIP: ASan/LSan not selected\n'
@@ -33,13 +33,35 @@ cli_sources=("$ROOT/src/main.c" "$ROOT/src/utils/file.c" "$ROOT/src/utils/error.
     "${elf[@]}" "${collect[@]}" "$ROOT/src/symbol/symbol_type.c"
     "$ROOT/src/symbol/symbol_sort.c" "$ROOT/src/symbol/symbol_print.c")
 fixtures="$ROOT/tests/edge_case_test/fixtures"
+describe_case() {
+    case "$1" in
+        file-*) printf 'File handling: %s' "${1#file-}" ;;
+        abi32-*) printf '32-bit size conversion: %s' "${1#abi32-}" ;;
+        ident-*) printf 'ELF identification: %s' "${1#ident-}" ;;
+        table*) printf 'ELF header/section table: %s' "$1" ;;
+        symbols*) printf 'Symbol/string table boundaries or output: %s' "$1" ;;
+        extended*) printf 'Extended indexes and section names: %s' "$1" ;;
+        payload*) printf 'Section payload policy: %s' "$1" ;;
+        elf*) printf 'FD/mapping lifetime and injected failures: %s' "$1" ;;
+        *) printf '%s' "$1" ;;
+    esac
+}
 record() {
-    local status=$1 name=$2
-    printf '%s\t%s\n' "$status" "$name" >> "$TASK_TMP/results.tsv"
+    local status=$1 name=$2 detail=${3:-}
+    [[ -n "$detail" ]] || detail=$(describe_case "$name")
+    printf '[%s] %s — %s\n' "$status" "$name" "$detail"
     case "$status" in
         PASS) passed=$((passed + 1)) ;;
-        FAIL) failed=$((failed + 1)); printf 'FAIL: %s (%s)\n' "$name" "$TASK_TMP" ;;
-        SKIP) skipped=$((skipped + 1)); printf 'SKIP: %s\n' "$name" ;;
+        FAIL)
+            failed=$((failed + 1))
+            # Display available diagnostics before temporary files are removed.
+            local file
+            for file in "$TASK_TMP/$name.log" "$TASK_TMP/build-$name.log" \
+                "$TASK_TMP/$name.err" "$TASK_TMP/$name.ft.err"; do
+                if [[ -s "$file" ]]; then cat "$file"; fi
+            done
+            ;;
+        SKIP) skipped=$((skipped + 1)) ;;
     esac
 }
 compile() {
@@ -58,11 +80,10 @@ run_case() {
         record PASS "$name"
     else
         record FAIL "$name"
-        cat "$TASK_TMP/$name.log"
     fi
 }
 finish() {
-    printf 'Result: %s PASS / %s FAIL / %s SKIP\nLogs: %s\n' "$passed" "$failed" "$skipped" "$TASK_TMP"
+    printf 'Result: %s PASS / %s FAIL / %s SKIP\n' "$passed" "$failed" "$skipped"
     [[ "$failed" == 0 ]] || exit 1
     [[ "$skipped" == 0 ]] || exit 2
 }

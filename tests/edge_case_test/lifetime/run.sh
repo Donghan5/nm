@@ -31,7 +31,6 @@ check_lifetime() {
         record FAIL "$name"
         return
     fi
-    cp "$TASK_TMP/audit.json" "$TASK_TMP/$name.audit.json"
     if [[ $(value errors) != 0 || $(value peak) -gt 1 ]]; then valid=false; fi
     if [[ "$fault" == none ]]; then
         if [[ $(value injected) != 0 ]] || ! cmp -s "$TASK_TMP/$name.referr" "$TASK_TMP/$name.err"; then valid=false; fi
@@ -43,7 +42,8 @@ check_lifetime() {
         printf 'ft_nm: %s: %s\n' "${paths[$((fail_at - 1))]}" "$message" > "$TASK_TMP/$name.expectederr"
         if ! cmp -s "$TASK_TMP/$name.expectederr" "$TASK_TMP/$name.err"; then valid=false; fi
     fi
-    if "$valid"; then record PASS "$name"; else record FAIL "$name"; fi
+    local detail="${#paths[@]} input(s), fault=$fault at=$fail_at; exit=$code, audit errors=$(value errors), peak mappings=$(value peak); fd/mapping balance and output checked"
+    if "$valid"; then record PASS "$name" "$detail"; else record FAIL "$name" "$detail"; cat "$TASK_TMP/audit.json"; fi
     rm -f "$TASK_TMP/audit.json"
 }
 for bits in 32 64; do
