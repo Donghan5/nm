@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shared build, timeout and reporting helpers; sourced by both Bash runners.
 set -euo pipefail
-ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 read -r -a compiler <<< "${CC:-cc}"
 base=(-Wall -Wextra -Werror -g -O1 -I"$ROOT/inc" -include "$ROOT/inc/ft_nm.h")
 sanitize=()
@@ -32,7 +32,7 @@ collect=("$ROOT/src/elf/get_elf_section.c" "$ROOT/src/symbol/symbol_collect_32.c
 cli_sources=("$ROOT/src/main.c" "$ROOT/src/utils/file.c" "$ROOT/src/utils/error.c"
     "${elf[@]}" "${collect[@]}" "$ROOT/src/symbol/symbol_type.c"
     "$ROOT/src/symbol/symbol_sort.c" "$ROOT/src/symbol/symbol_print.c")
-fixtures="$ROOT/tests/days_test/fixtures"
+fixtures="$ROOT/tests/edge_case_test/fixtures"
 record() {
     local status=$1 name=$2
     printf '%s\t%s\n' "$status" "$name" >> "$TASK_TMP/results.tsv"

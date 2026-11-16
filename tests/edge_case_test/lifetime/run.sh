@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Reduced failure-injection suite, using the same real-CLI lifetime audit.
-source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
-wrap="$ROOT/tests/days_test/lifetime/wrap.c"
+source "$(dirname -- "${BASH_SOURCE[0]}")/../../common.sh"
+wrap="$ROOT/tests/edge_case_test/lifetime/wrap.c"
 mkdir "$work/fixtures"
 printf 'not ELF\n' > "$work/fixtures/text"
 wrapflags=()
@@ -48,7 +48,7 @@ check_lifetime() {
 }
 for bits in 32 64; do
     fixture="$work/fixtures/normal$bits.o"
-    if ! timeout 30s "${compiler[@]}" -m"$bits" -c "$fixtures/output_fixture.s" -o "$fixture" \
+    if ! timeout 30s "${compiler[@]}" -m"$bits" -c "$ROOT/tests/eval_test/symbols.s" -o "$fixture" \
         > "$TASK_TMP/fixture$bits.log" 2>&1; then
         record FAIL "fixture$bits"
         continue

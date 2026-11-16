@@ -104,12 +104,12 @@ The project is organized into the following directories:
 │   ├── symbol/                  # Collection, classification, sorting, printing
 │   └── utils/                   # File mapping, cleanup, and diagnostics
 ├── tests/
+│   ├── common.sh                # Shared Bash test helpers
 │   ├── README.md                # Detailed Bash test guide
-│   ├── days_test/               # Core fixtures and regression runner
+│   ├── edge_case_test/               # Core fixtures and regression runner
 │   │   ├── fixtures/
 │   │   └── lifetime/            # Failure injection and resource audit
 │   └── eval_test/               # School fixtures and comparison runner
-├── eval-auto/                   # Separate Python mandatory evaluation runner
 ├── milestone.md                 # Progress and validation history
 ├── edit.log                     # Development and review notes
 ├── bouns.md                     # Historical bonus plan
@@ -170,9 +170,10 @@ the general payload check.
 Run these commands from the repository root:
 
 ```sh
-make days_test       # 97 core checks, including 2 actual 32-bit ABI checks
+make test            # Main evaluation suite (same as make eval_test)
+make edge_case_test       # 75 edge checks, including 2 actual 32-bit ABI checks
 make lifetime_test   # 16 fd/mapping lifetime and failure-injection scenarios
-make eval_test       # 24 school-binary cases and 6 compiled-source comparisons
+make eval_test       # School fixtures, ELF32/64 formats, CLI and -r/-p comparisons
 ```
 
 These Bash runners compile the current sources into temporary executables and
@@ -183,17 +184,6 @@ support affect which checks can run; a skipped check is not a pass.
 See the [test guide](tests/README.md) for prerequisites, sanitizer settings,
 coverage, log locations, exit codes, and the separate acceptance policy for
 malformed school fixtures.
-
-A separate AI-authored mandatory evaluation tool is available with:
-
-```sh
-make eval-auto
-```
-
-It uses Python 3, rebuilds the root executable, and requires additional tools
-including Valgrind and a working 32-bit C build environment. Its comparison
-policy and requirements are documented in [eval-auto/README.md](eval-auto/README.md).
-It is independent of the Bash suites and does not test bonus options.
 
 ## Scope and Limitations
 

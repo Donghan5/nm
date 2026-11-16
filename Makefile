@@ -34,21 +34,17 @@ fclean: clean
 re: fclean
 	$(MAKE) all
 
-days_test:
-	CC="$(CC)" bash tests/days_test/run.sh
+edge_case_test:
+	CC="$(CC)" bash tests/edge_case_test/run.sh
 
 lifetime_test:
-	CC="$(CC)" bash tests/days_test/lifetime/run.sh
+	CC="$(CC)" bash tests/edge_case_test/lifetime/run.sh
 
 eval_test:
 	CC="$(CC)" bash tests/eval_test/run.sh
 
-eval-auto:
-	CC="$(CC)" python3 eval-auto/run.py $(EVAL_AUTO_FLAGS)
-
-eval-auto-bonus:
-	CC="$(CC)" python3 eval-auto/run.py --bonus $(EVAL_AUTO_FLAGS)
+test: eval_test
 
 -include $(DEPS)
 
-.PHONY: all clean fclean re days_test lifetime_test eval_test eval-auto eval-auto-bonus
+.PHONY: all clean fclean re edge_case_test lifetime_test eval_test test

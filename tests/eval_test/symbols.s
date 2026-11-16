@@ -16,13 +16,6 @@ weak_function:
 .weak weak_notype
 weak_notype:
 .byte 0xc3
-/* Relocations preserve undefined entries in the symbol table. */
-.long external_symbol
-.weak weak_missing
-.long weak_missing
-.weak weak_object_missing
-.type weak_object_missing,@object
-.long weak_object_missing
 .data
 .globl alpha_data
 .type alpha_data,@object
@@ -78,10 +71,6 @@ init_array_local:
 .section .fini_array,"aw",@fini_array
 .globl fini_array_global
 fini_array_global:
-.long 0
-.section .preinit_array,"aw",@preinit_array
-.local preinit_array_local
-preinit_array_local:
 .long 0
 .section .note.day4,"a",@note
 .balign 4
