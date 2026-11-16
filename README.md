@@ -103,23 +103,20 @@ The project is organized into the following directories:
 │   ├── elf/                     # ELF identification, readers, and validation
 │   ├── symbol/                  # Collection, classification, sorting, printing
 │   └── utils/                   # File mapping, cleanup, and diagnostics
-├── tests/
-│   ├── common.sh                # Shared Bash test helpers
-│   ├── README.md                # Detailed Bash test guide
-│   ├── edge_case_test/               # Core fixtures and regression runner
-│   │   ├── fixtures/
-│   │   └── lifetime/            # Failure injection and resource audit
-│   └── eval_test/               # School fixtures and comparison runner
-├── milestone.md                 # Progress and validation history
-├── edit.log                     # Development and review notes
-├── bouns.md                     # Historical bonus plan
-├── codex.md                     # Collaboration notes
-└── rule.md                      # Editing and refactoring rules
+└── tests/
+    ├── common.sh                # Shared Bash test helpers
+    ├── demo.sh                  # Live command and output demonstration
+    ├── README.md                # Detailed Bash test guide
+    ├── edge_case_test/           # Core fixtures and regression runner
+    │   ├── fixtures/
+    │   └── lifetime/            # Failure injection and resource audit
+    └── eval_test/               # School fixtures and comparison runner
+        └── libft_malloc.so      # Supplied shared-library test input
 ```
 
 Build artifacts are generated under `build/`, and the executable is generated
-as `ft_nm`. Historical planning documents describe earlier stages; the current
-implementation and test guides define the behavior and commands available now.
+as `ft_nm`. The test guide in `tests/README.md` describes the test suites and
+their requirements.
 
 ## Project Architecture
 
@@ -170,22 +167,33 @@ the general payload check.
 Run these commands from the repository root:
 
 ```sh
-make demo            # Show commands, actual output and exit codes
-make demo32          # Build an ELF32 object and show file type, GNU nm and ft_nm output
-make test            # Main evaluation suite (same as make eval_test)
-make edge_case_test       # 75 edge checks, including 2 actual 32-bit ABI checks
-make lifetime_test   # 16 fd/mapping lifetime and failure-injection scenarios
-make eval_test       # School fixtures, ELF32/64 formats, CLI and -r/-p comparisons
+make demo             # Show commands, actual output and exit codes
+make demo32           # Show ELF32 file type, GNU nm and ft_nm output
+make test             # Main evaluation suite (same as make eval_test)
+make edge_case_test   # 75 edge checks, including 2 actual 32-bit ABI checks
+make lifetime_test    # 16 fd/mapping lifetime and failure-injection scenarios
+make eval_test        # 122 school, shared-library, format, CLI and option checks
 ```
 
-These Bash runners compile the current sources into temporary executables and
+The evaluation suite compares supplied `tests/eval_test/*.so` files, including
+`libft_malloc.so`, with GNU `nm` under default, `-r`, `-p` and combined options.
+It also covers school fixtures and generated ELF32/64 inputs.
+
+The test runners compile the current sources into temporary executables and
 use `LC_ALL=C` for GNU `nm` comparisons. ASan, UBSan, and LeakSanitizer are enabled
 by default, except for the two actual 32-bit ABI checks. Missing runtimes or ABI
 support affect which checks can run; a skipped check is not a pass.
 
+`make demo` and `make demo32` display examples rather than run assertion suites.
+`make demo32` builds `build/demo32.o` with `-m32` and requires 32-bit libc
+development headers. On Ubuntu, install `libc6-dev-i386` and `gcc-multilib`.
+The main evaluation suite also needs these packages for its 32-bit C input.
+`make clean` removes `build/demo32.o`.
+
 See the [test guide](tests/README.md) for prerequisites, sanitizer settings,
-coverage, log locations, exit codes, and the separate acceptance policy for
-malformed school fixtures.
+coverage, exit codes, and the separate acceptance policy for malformed school
+fixtures. Test results and failure diagnostics are printed to the terminal;
+temporary comparison files and logs are removed when each runner exits.
 
 ## Scope and Limitations
 
@@ -204,6 +212,3 @@ malformed school fixtures.
 - Tests cover specified valid and malformed inputs. They do not establish
   correctness for every ELF variant, allocation failure, cleanup-system-call
   failure, or concurrent truncation of a mapped file.
-
-Detailed progress, historical results, and remaining explanation work are
-recorded in [milestone.md](milestone.md).
