@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 # High-value edge cases plus minimal positive controls. No Python dependency.
 source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
-require32=false
-if [[ "${1:-}" == --require-32 ]]; then require32=true; shift; fi
-if [[ $# != 0 ]]; then printf 'Usage: bash tests/edge_case_test/run.sh [--require-32]\n' >&2; exit 1; fi
+if [[ $# != 0 ]]; then printf 'Usage: bash tests/edge_case_test/run.sh\n' >&2; exit 1; fi
 printf 'hello\n' > "$work/regular"
 : > "$work/empty"
 mkdir "$work/directory"
 file_sources=("$fixtures/file_test.c" "$ROOT/src/utils/file.c" "$ROOT/src/utils/error.c")
 if compile file "${file_sources[@]}" -Wl,--wrap=fstat; then
-    for name in cleanup-zero empty missing directory repeat size-negative; do
+    for name in cleanup-zero regular empty missing directory repeat size-negative; do
         path="$work/regular"
         case "$name" in empty|missing|directory) path="$work/$name" ;; esac
         run_case "file-$name" "$work/file" "$name" "$path"
@@ -29,17 +27,27 @@ if timeout 30s "${compiler[@]}" -m32 -D_FILE_OFFSET_BITS=64 "$fixtures/abi32_pro
         cat "$TASK_TMP/build-file32.log"
     fi
 else
-    if "$require32"; then record FAIL abi32-unavailable; else record SKIP abi32-unavailable; fi
+    # The school environment provides multilib, so a host that cannot build -m32
+    # is a local toolchain gap rather than a defect in ft_nm. Report it as a
+    # warning that names the checks which did not run, so reduced coverage stays
+    # visible without failing the suite. The main suite still treats its own
+    # -m32 builds as failures, as the evaluation sheet requires them.
+    record WARN abi32-unavailable "multilib -m32 unavailable, so abi32-size-max-valid and abi32-size-overflow did not run (install gcc-multilib)"
+    cat "$TASK_TMP/abi32.log"
 fi
 if compile ident "$fixtures/ident_test.c" "${elf[0]}"; then
-    for name in ranges short-inputs magic class endian; do
+    for name in ranges short-inputs magic class endian version valid-ident; do
         run_case "ident-$name" "$work/ident" "$name"
     done
 fi
 for bits in 32 64; do
     if compile "table$bits" -DDAY2_BITS="$bits" "$fixtures/table_test.c" "${elf[@]}"; then
-        for name in regular extended-sections extended-truncated program-truncated \
-            section-entry section-truncated section-offset null-args; do
+        for name in regular none exec shared null-args \
+            bad-magic wrong-class big-endian header-size header-version machine type \
+            section-entry section-truncated section-offset zero-offset-count \
+            reserved-count extended-sections extended-small extended-truncated \
+            extended-programs program program-truncated program-entry \
+            program-zero-offset short-header; do
             run_case "table$bits-$name" "$work/table$bits" "$name"
         done
         if [[ "$bits" == 64 ]]; then
@@ -48,11 +56,18 @@ for bits in 32 64; do
         fi
     fi
     if compile "symbols$bits" -DDAY3_BITS="$bits" "$fixtures/symbol_test.c" "${elf[@]}" "${collect[@]}"; then
-        for name in regular link-oob link-type entry-zero entry-partial symbol-payload \
+        for name in regular abs common local missing dynsym-only \
+            reader-contract string-contract \
+            link-oob link-type entry-zero entry-wrong entry-partial symbol-payload \
             string-payload name-oob name-no-nul section-oob xindex-unsupported \
             name-max-fit name-too-long; do
             run_case "symbols$bits-$name" "$work/symbols$bits" "$name"
         done
+        if [[ "$bits" == 64 ]]; then
+            for name in huge-offset huge-size; do
+                run_case "symbols64-$name" "$work/symbols64" "$name"
+            done
+        fi
     fi
     if compile "extended$bits" -DTEST_BITS="$bits" "$fixtures/extended_test.c" "${elf[@]}" "${collect[@]}"; then
         for name in valid nonzero-companion missing duplicate shstr-range section-name-oob; do

@@ -1,3 +1,5 @@
+#include "ft_nm.h"
+
 bool return_false_with_free(t_symbol **symbols, size_t *count)
 {
     if (*symbols)

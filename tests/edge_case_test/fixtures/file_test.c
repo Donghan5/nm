@@ -13,6 +13,11 @@ int check_file_size(int fd, t_file *file);
 #ifdef DAY1_TEST_32
 _Static_assert(sizeof(size_t) == 4, "32-bit size_t required");
 _Static_assert(sizeof(off_t) == 8, "64-bit off_t required");
+/* Guarantee at compile time that SIZE_MAX + 1 is representable as a positive
+   off_t. The overflow case is therefore always testable in this build and
+   needs no runtime skip: off_t is signed, hence one fewer value bit. */
+_Static_assert(sizeof(off_t) * CHAR_BIT - 1 > sizeof(size_t) * CHAR_BIT,
+	"off_t must be able to represent SIZE_MAX + 1");
 # define __real_fstat __real_fstat64
 # define __wrap_fstat __wrap_fstat64
 #endif
@@ -67,13 +72,14 @@ static int size_boundary(const char *name, const char *path)
 		injected_size = (off_t)-1;
 	else if (!strcmp(name, "size-overflow"))
 	{
-		if (off_max <= (uintmax_t)SIZE_MAX)
-		{
-			puts("SIZE_MAX + 1 cannot be represented by off_t on this platform; overflow rejection was not tested");
-			return (77);
-		}
+#ifdef DAY1_TEST_32
+		/* Representability is a compile-time guarantee above, so this case
+		   always runs; it is never reduced to a skip. */
 		value = (uintmax_t)SIZE_MAX;
 		injected_size = (off_t)(value + 1);
+#else
+		return (fail("size-overflow requires the 32-bit build"));
+#endif
 	}
 	else
 	{
@@ -87,8 +93,14 @@ static int size_boundary(const char *name, const char *path)
 	result = check_file_size(fd, &file);
 	inject_stat = 0;
 	close(fd);
-	if (reject && result >= 0)
-		return (fail("unrepresentable file size was accepted"));
+	/* FILE_ERROR specifically: a size that was silently truncated to zero
+	   would also be "negative", but it would surface as FILE_EMPTY. */
+	if (reject && result != FILE_ERROR)
+	{
+		fprintf(stderr, "FAIL: expected FILE_ERROR (%d), got %d\n",
+			FILE_ERROR, result);
+		return (1);
+	}
 	if (reject && file.f_size != 0)
 		return (fail("rejected size changed the output size"));
 	if (!reject && (result != 0 || file.f_size != (size_t)injected_size))
@@ -99,36 +111,56 @@ static int size_boundary(const char *name, const char *path)
 int main(int argc, char **argv)
 {
 	t_file file = {0};
+	const char *name;
 	int before;
 	int result;
+	int expected;
 	int valid;
-	int repeated;
 	int i;
 	int rounds;
 
 	if (argc != 3)
-		return (fail("usage: day1_file_test CASE PATH"));
-	if (!strncmp(argv[1], "size-", 5))
-		return (size_boundary(argv[1], argv[2]));
+		return (fail("usage: file_test CASE PATH"));
+	name = argv[1];
+	if (!strncmp(name, "size-", 5))
+		return (size_boundary(name, argv[2]));
+	if (!strcmp(name, "cleanup-zero"))
+	{
+		cleanup_file(&file);
+		cleanup_file(&file);
+		if (file.f_data != NULL || file.f_size != 0)
+			return (fail("cleanup on a zeroed file must stay reset"));
+		return (0);
+	}
+	/* Every case asserts one specific status, so a misspelled case name
+	   cannot fall through and silently exercise the positive control. */
+	if (!strcmp(name, "regular") || !strcmp(name, "repeat"))
+		expected = 0;
+	else if (!strcmp(name, "empty"))
+		expected = FILE_EMPTY;
+	else if (!strcmp(name, "missing"))
+		expected = FILE_ERROR;
+	else if (!strcmp(name, "directory"))
+		expected = FILE_DIRECTORY;
+	else
+	{
+		fprintf(stderr, "FAIL: unknown case name \"%s\"\n", name);
+		return (1);
+	}
+	valid = expected == 0;
+	rounds = !strcmp(name, "repeat") ? 64 : 1;
 	before = fd_count();
 	if (before < 0)
 		return (fail("cannot inspect /proc/self/fd"));
-	if (!strcmp(argv[1], "cleanup-zero"))
-	{
-		cleanup_file(&file);
-		cleanup_file(&file);
-		return (0);
-	}
-	valid = !strcmp(argv[1], "regular") || !strcmp(argv[1], "repeat");
-	repeated = !strcmp(argv[1], "repeat");
-	rounds = repeated ? 64 : 1;
 	for (i = 0; i < rounds; i++)
 	{
 		result = handle_file(argv[2], &file);
-		if (valid && result != 0)
-			return (fail("regular file was rejected"));
-		if (!valid && result >= 0)
-			return (fail("invalid input was accepted"));
+		if (result != expected)
+		{
+			fprintf(stderr, "FAIL: %s: expected status %d, got %d\n",
+				name, expected, result);
+			return (1);
+		}
 		if (fd_count() != before)
 			return (fail("file descriptor leaked before cleanup"));
 		if (valid)
@@ -140,6 +172,8 @@ int main(int argc, char **argv)
 			if (strcmp((const char *)file.f_name, argv[2]))
 				return (fail("filename was not stored correctly"));
 		}
+		else if (file.f_data != NULL)
+			return (fail("a rejected input must not leave a mapping"));
 		cleanup_file(&file);
 		if (file.f_data != NULL || file.f_size != 0)
 			return (fail("cleanup must reset mapping and size"));

@@ -1,5 +1,5 @@
 NAME = ft_nm
-CC = cc
+CC ?= cc
 CFLAGS = -Wall -Wextra -Werror
 CPPFLAGS = -Iinc -I.
 
@@ -22,8 +22,6 @@ $(OBJ_DIR)/%.o: %.c
 	mkdir -p $(dir $@) $(dir $(DEP_DIR)/$*.d)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -MF $(DEP_DIR)/$*.d -c $< -o $@
 
-$(OBJ_DIR)/src/symbol/symbol_tools.o: CPPFLAGS += -include inc/ft_nm.h
-
 clean:
 	$(RM) $(OBJS) $(DEPS)
 	$(RM) $(SRCS:.c=.o) $(SRCS:.c=.d)
@@ -31,6 +29,7 @@ clean:
 
 fclean: clean
 	$(RM) $(NAME)
+	$(RM) -r $(OBJ_DIR) $(DEP_DIR) build
 
 re: fclean
 	$(MAKE) all
@@ -60,6 +59,9 @@ build/demo32.o: tests/eval_test/not_so_easy_test.c
 
 test: eval_test
 
+# Every suite in one run; `test` stays the school-facing alias for eval_test.
+test_all: eval_test edge_case_test lifetime_test
+
 -include $(DEPS)
 
-.PHONY: all clean fclean re edge_case_test lifetime_test eval_test test demo demo32
+.PHONY: all clean fclean re edge_case_test lifetime_test eval_test test test_all demo demo32

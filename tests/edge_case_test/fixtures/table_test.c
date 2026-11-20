@@ -105,6 +105,8 @@ int main(int argc, char **argv)
     else if (!strcmp(name, "program-zero-offset")) h.e_phoff = 0, expected = -1;
     else if (!strcmp(name, "short-header")) file.f_size = sizeof(EH) - 1, expected = -1;
 #if DAY2_BITS == 64
+    /* huge-* are 64-bit only; on a 32-bit build they fall through to the
+       unknown-name guard below instead of silently passing as "regular". */
     else if (!strcmp(name, "huge-offset")) h.e_shoff = UINT64_MAX, expected = -1;
     else if (!strcmp(name, "huge-count"))
     {
@@ -114,6 +116,16 @@ int main(int argc, char **argv)
         expected = -1;
     }
 #endif
+    /* Names configured earlier (or needing no change) are the only ones allowed
+       to reach the positive control; anything else is a typo in run.sh. */
+    else if (strcmp(name, "regular") && strcmp(name, "null-args")
+        && strcmp(name, "extended-sections") && strcmp(name, "extended-programs")
+        && strcmp(name, "program"))
+    {
+        free(bytes);
+        fprintf(stderr, "FAIL: unknown case name \"%s\"\n", name);
+        return (1);
+    }
     memcpy(bytes, &h, sizeof(h));
     if (!strcmp(name, "null-args"))
         result = GET(NULL, &table) == -1 && GET(&file, NULL) == -1 ? 0 : 1;

@@ -33,6 +33,24 @@ int main(int argc, char **argv)
 	int result;
 
 	if (argc != 2 && argc != 3) return (1);
+	/* Reject an unrecognised case name instead of inferring an expectation
+	   from it, so a typo in run.sh cannot turn into a silent pass. */
+	{
+		static const char *const collect[] = {"valid", "nonzero-companion",
+			"missing", "duplicate", "shstr-range", "section-name-oob", NULL};
+		static const char *const emit[] = {"emit-range", "emit-note",
+			"emit-nobits", NULL};
+		const char *const *allowed = argc == 3 ? emit : collect;
+		size_t i = 0;
+
+		while (allowed[i] && strcmp(allowed[i], argv[1]))
+			i++;
+		if (!allowed[i])
+		{
+			fprintf(stderr, "FAIL: unknown case name \"%s\"\n", argv[1]);
+			return (1);
+		}
+	}
 	expected = !strcmp(argv[1], "valid");
 	file.f_size = xoff + sizeof(words);
 	file.f_data = calloc(1, file.f_size);

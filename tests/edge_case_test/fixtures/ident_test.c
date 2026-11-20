@@ -98,8 +98,13 @@ static int field_values(const char *name)
 		first = EI_CLASS, last = EI_CLASS;
 	else if (!strcmp(name, "endian"))
 		first = EI_DATA, last = EI_DATA;
-	else
+	else if (!strcmp(name, "version"))
 		first = EI_VERSION, last = EI_VERSION;
+	else
+	{
+		fprintf(stderr, "FAIL: unknown case name \"%s\"\n", name);
+		return (1);
+	}
 	for (index = first; index <= last; index++)
 		for (value = 0; value <= 255; value++)
 		{
@@ -119,21 +124,13 @@ static int field_values(const char *name)
 	return (0);
 }
 
-int main(int argc, char **argv)
+static int valid_combinations(void)
 {
 	unsigned char data[EI_NIDENT];
 	t_file file = {0};
 	int cls;
 	int endian;
 
-	if (argc != 2)
-		return (fail("expected one test case name"));
-	if (!strcmp(argv[1], "ranges"))
-		return (ranges());
-	if (!strcmp(argv[1], "short-inputs"))
-		return (short_inputs());
-	if (strcmp(argv[1], "valid-ident"))
-		return (field_values(argv[1]));
 	file.f_data = data;
 	file.f_size = sizeof(data);
 	for (cls = ELFCLASS32; cls <= ELFCLASS64; cls++)
@@ -146,4 +143,18 @@ int main(int argc, char **argv)
 				return (fail("valid identification was rejected"));
 		}
 	return (0);
+}
+
+int main(int argc, char **argv)
+{
+	if (argc != 2)
+		return (fail("expected one test case name"));
+	if (!strcmp(argv[1], "ranges"))
+		return (ranges());
+	if (!strcmp(argv[1], "short-inputs"))
+		return (short_inputs());
+	if (!strcmp(argv[1], "valid-ident"))
+		return (valid_combinations());
+	/* field_values rejects any name it does not recognise. */
+	return (field_values(argv[1]));
 }

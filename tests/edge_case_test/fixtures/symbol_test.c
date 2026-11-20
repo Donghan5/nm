@@ -112,9 +112,19 @@ int main(int argc, char **argv)
         expected = len < PATH_MAX;
     }
 #if DAY3_BITS == 64
+    /* huge-* are 64-bit only; on a 32-bit build they fall through to the
+       unknown-name guard below instead of silently passing as "regular". */
     else if (!strcmp(name, "huge-offset")) sections[2].sh_offset = UINT64_MAX, expected = false;
     else if (!strcmp(name, "huge-size")) sections[2].sh_size = UINT64_MAX, expected = false;
 #endif
+    /* Only the unmodified cases may reach the positive control. */
+    else if (strcmp(name, "regular") && strcmp(name, "reader-contract")
+        && strcmp(name, "string-contract"))
+    {
+        free(data);
+        fprintf(stderr, "FAIL: unknown case name \"%s\"\n", name);
+        return (1);
+    }
     memcpy(data, &header, sizeof(header));
     memcpy(data + table_offset, sections, sizeof(sections));
     memcpy(data + symbol_offset, entries, sizeof(entries));

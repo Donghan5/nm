@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 read -r -a compiler <<< "${CC:-cc}"
-base=(-Wall -Wextra -Werror -g -O1 -I"$ROOT/inc" -include "$ROOT/inc/ft_nm.h")
+base=(-Wall -Wextra -Werror -g -O1 -I"$ROOT/inc")
 sanitize=()
 selection=${NM_TEST_SANITIZERS:-address,undefined}
 case "$selection" in
@@ -18,7 +18,7 @@ TASK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/nm-edge.XXXXXX")
 work="$TASK_TMP/build"
 mkdir "$work"
 trap 'rm -rf -- "$TASK_TMP"' EXIT
-passed=0 failed=0 skipped=0
+passed=0 failed=0 skipped=0 warned=0
 printf 'Sanitizers: %s\n' "$selection"
 [[ "$selection" == *address* ]] || printf 'SKIP: ASan/LSan not selected\n'
 [[ "$selection" == *undefined* ]] || printf 'SKIP: UBSan not selected\n'
@@ -62,6 +62,10 @@ record() {
             done
             ;;
         SKIP) skipped=$((skipped + 1)) ;;
+        # WARN is not a test result: it reports a host capability the suite needs
+        # but cannot provide for itself. It never changes the exit status, so the
+        # detail must name every check that did not run.
+        WARN) warned=$((warned + 1)) ;;
     esac
 }
 compile() {
@@ -76,6 +80,8 @@ compile() {
 }
 run_case() {
     local name=$1; shift
+    # No fixture may report "untestable": every case either runs or fails. Any
+    # platform limitation is a compile-time assertion inside the fixture.
     if timeout 10s "$@" > "$TASK_TMP/$name.log" 2>&1; then
         record PASS "$name"
     else
@@ -83,7 +89,11 @@ run_case() {
     fi
 }
 finish() {
-    printf 'Result: %s PASS / %s FAIL / %s SKIP\n' "$passed" "$failed" "$skipped"
+    # The counts are always printed, zeros included, so "nothing was skipped or
+    # warned" is visible evidence rather than an absent line.
+    printf 'Result: %s PASS / %s FAIL / %s SKIP / %s WARN\n' \
+        "$passed" "$failed" "$skipped" "$warned"
+    [[ "$warned" == 0 ]] || printf 'Warnings above report checks that did not run on this host.\n'
     [[ "$failed" == 0 ]] || exit 1
     [[ "$skipped" == 0 ]] || exit 2
 }
