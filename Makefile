@@ -55,7 +55,7 @@ edge_case_test:
 	CC="$(CC)" bash tests/edge_case_test/run.sh
 
 lifetime_test:
-	CC="$(CC)" bash tests/edge_case_test/lifetime/run.sh
+	@CC="$(CC)" bash tests/edge_case_test/lifetime/run.sh
 
 eval_test:
 	CC="$(CC)" bash tests/eval_test/run.sh

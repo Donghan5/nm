@@ -21,9 +21,6 @@ work="$TASK_TMP/build"
 mkdir "$work"
 trap 'rm -rf -- "$TASK_TMP"' EXIT
 passed=0 failed=0 skipped=0 warned=0
-printf 'Sanitizers: %s\n' "$selection"
-[[ "$selection" == *address* ]] || printf 'SKIP: ASan/LSan not selected\n'
-[[ "$selection" == *undefined* ]] || printf 'SKIP: UBSan not selected\n'
 if [[ ":$ASAN_OPTIONS:" == *:detect_leaks=0:* ]]; then
     printf 'SKIP: LeakSanitizer (detect_leaks=0)\n'
 fi
