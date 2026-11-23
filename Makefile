@@ -57,6 +57,9 @@ build/demo32.o: tests/eval_test/not_so_easy_test.c
 	mkdir -p build
 	$(CC) $(CFLAGS) -m32 -c $< -o $@
 
+proof: $(NAME)
+	bash tests/proof.sh
+
 test: eval_test
 
 # Every suite in one run; `test` stays the school-facing alias for eval_test.
@@ -64,4 +67,4 @@ test_all: eval_test edge_case_test lifetime_test
 
 -include $(DEPS)
 
-.PHONY: all clean fclean re edge_case_test lifetime_test eval_test test test_all demo demo32
+.PHONY: all clean fclean re edge_case_test lifetime_test eval_test test test_all proof demo demo32

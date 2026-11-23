@@ -142,6 +142,12 @@ static int process_file(const char *filename, bool show_filename)
 			fprintf(stderr, "ft_nm: Warning: '%s' is a directory\n", filename);
 			return (-1);
 		}
+		if (file_status == FILE_NOT_REGULAR)
+		{
+			fprintf(stderr, "ft_nm: Warning: '%s' is not an ordinary file\n",
+				filename);
+			return (-1);
+		}
 		if (saved_errno == ENOENT)
 		{
 			fprintf(stderr, "ft_nm: '%s': No such file or directory\n", filename);

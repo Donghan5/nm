@@ -12,7 +12,9 @@ int	open_file(const char *filename)
 {
 	int fd;
 
-	fd = open(filename, O_RDONLY);
+	/* O_NONBLOCK keeps a FIFO from blocking until a writer appears; it has no
+	   effect on regular files. Non-regular inputs are rejected afterwards. */
+	fd = open(filename, O_RDONLY | O_NONBLOCK);
 	return (fd);
 }
 
@@ -36,6 +38,11 @@ int	check_file_size(int fd, t_file *file)
 		return (-1);
 	if (S_ISDIR(st.st_mode))
 		return (FILE_DIRECTORY);
+	/* A FIFO, device or socket has no symbol table to map; nm reports these
+	   separately from a directory. Checked after S_ISDIR so that case keeps
+	   its own diagnostic. */
+	if (!S_ISREG(st.st_mode))
+		return (FILE_NOT_REGULAR);
 	if (st.st_size < 0)
 		return (-1);
 	if ((uintmax_t)st.st_size > (uintmax_t)(SIZE_MAX))
@@ -69,7 +76,7 @@ int	handle_file(const char *filename, t_file *file)
 
 	fd = open_file(filename);
 	if (fd < 0)
-	return (-1);
+		return (-1);
 	init_file(file);
 	status = check_file_size(fd, file);
 	if (status < 0)

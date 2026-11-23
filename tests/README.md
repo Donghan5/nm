@@ -9,7 +9,25 @@ make eval_test       # 140 school, shared-library, format, CLI and bonus checks
 make edge_case_test  # 132 edge checks
 make lifetime_test   # 16 failure-injection and resource-lifetime checks
 make test_all        # All three suites in one run
+make proof           # Live differential scan of every ELF file on this host
 ```
+
+## Live differential proof
+
+`make proof` runs ft_nm and GNU nm over every ELF file under `/usr/lib`, `/lib`,
+`/usr/bin`, `/bin` and `/usr/sbin` on the machine it is run on, comparing stdout
+byte for byte (order included), stderr with only the program name normalised,
+and the exit status. It shows a live progress bar, the file being compared and
+running counters, then a final verdict. Roughly 3,200 files and 90 seconds on a
+stock Ubuntu install.
+
+Nothing is precomputed: the numbers come from the run on screen. The file list
+is filtered by what `file(1)` reports, so an `ar` archive — not an ELF file and
+outside the subject's scope — is counted as skipped, never as a pass, and the
+skipped count is printed. A disagreement is re-run once before being recorded;
+a result that does not reproduce is reported as nondeterministic rather than
+quietly counted either way. Mismatches print the offending path and a diff, and
+the command exits 1.
 
 ## Main evaluation suite
 

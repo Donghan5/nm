@@ -5,7 +5,8 @@ typedef enum e_file_status
 {
 	FILE_ERROR = -1,
 	FILE_EMPTY = -2,
-	FILE_DIRECTORY = -3
+	FILE_DIRECTORY = -3,
+	FILE_NOT_REGULAR = -4
 } t_file_status;
 
 /* Structure to hold symbol information */
