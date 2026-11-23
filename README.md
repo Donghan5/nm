@@ -83,7 +83,8 @@ The program exits with 0 when all files are processed successfully and 1 when
 an option or file fails. A file error does not prevent subsequent files from
 being processed. A valid input without a regular symbol table produces a
 `no symbols` diagnostic and exits successfully. Empty files exit with 1 without
-a diagnostic; directories are reported and also exit with 1.
+a diagnostic. Directories and FIFOs produce warnings and exit with 1. FIFO
+inputs are opened in nonblocking mode, so the program does not wait for a writer.
 
 ## Project Structure
 
@@ -173,6 +174,9 @@ make test             # Main evaluation suite (same as make eval_test)
 make edge_case_test   # 130 edge checks
 make lifetime_test    # 16 fd/mapping lifetime and failure-injection scenarios
 make eval_test        # 137 school, shared-library, format, CLI and option checks
+make test_all         # Run the evaluation, edge-case and lifetime suites
+make valgrind         # Check ft_nm, the ELF32 example and evaluation fixtures
+make proof            # Compare ft_nm and GNU nm on ELF files in system directories
 ```
 
 The evaluation suite compares supplied `tests/eval_test/*.so` files, including
