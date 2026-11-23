@@ -15,6 +15,23 @@ DEPS = $(SRCS:%.c=$(DEP_DIR)/%.d)
 
 all: $(NAME)
 
+help:
+	@echo "make [all]          Build $(NAME)"
+	@echo "make $(NAME)          Build the $(NAME) executable"
+	@echo "make clean          Remove object and dependency files"
+	@echo "make fclean         Remove build files and the executable"
+	@echo "make re             Clean and rebuild"
+	@echo "make test           Run the evaluation tests"
+	@echo "make eval_test      Run the evaluation tests"
+	@echo "make edge_case_test Run the edge-case tests"
+	@echo "make lifetime_test  Run the lifetime tests"
+	@echo "make test_all       Run all test suites"
+	@echo "make valgrind       Check evaluation fixtures with Valgrind"
+	@echo "make demo           Run the demo"
+	@echo "make demo32         Compare symbol output for a 32-bit object"
+	@echo "make proof          Run the proof script"
+	@echo "make help           Show available commands"
+
 $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $@
 
@@ -53,9 +70,13 @@ demo32: $(NAME) build/demo32.o
 	@echo "ft_nm:"
 	LC_ALL=C ./$(NAME) build/demo32.o
 
-build/demo32.o: tests/eval_test/not_so_easy_test.c
+build/demo32.o: tests/eval_test/symbols.s
 	mkdir -p build
-	$(CC) $(CFLAGS) -m32 -c $< -o $@
+	$(AS) --32 $< -o $@
+
+valgrind: export CCACHE_DISABLE ?= 1
+valgrind: $(NAME) build/demo32.o
+	bash tests/eval_test/valgrind.sh ./$(NAME) build/demo32.o
 
 proof: $(NAME)
 	bash tests/proof.sh
@@ -67,4 +88,4 @@ test_all: eval_test edge_case_test lifetime_test
 
 -include $(DEPS)
 
-.PHONY: all clean fclean re edge_case_test lifetime_test eval_test test test_all proof demo demo32
+.PHONY: all help clean fclean re edge_case_test lifetime_test eval_test test test_all valgrind proof demo demo32

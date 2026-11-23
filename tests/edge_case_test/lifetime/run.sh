@@ -11,6 +11,7 @@ done
 if ! timeout 60s "${compiler[@]}" "${base[@]}" "${sanitize[@]}" -Dmain=nm_cli_main \
     -c "$ROOT/src/main.c" -o "$work/main.o" > "$TASK_TMP/build-main.log" 2>&1; then
     record FAIL build/main
+    cat "$TASK_TMP/build-main.log"
     finish
 fi
 if ! compile audit "$work/main.o" "${cli_sources[@]:1}" "$wrap" "${wrapflags[@]}"; then finish; fi
@@ -48,7 +49,7 @@ check_lifetime() {
 }
 for bits in 32 64; do
     fixture="$work/fixtures/normal$bits.o"
-    if ! timeout 30s "${compiler[@]}" -m"$bits" -c "$ROOT/tests/eval_test/symbols.s" -o "$fixture" \
+    if ! timeout 30s "${AS:-as}" --"$bits" "$ROOT/tests/eval_test/symbols.s" -o "$fixture" \
         > "$TASK_TMP/fixture$bits.log" 2>&1; then
         record FAIL "fixture$bits"
         continue

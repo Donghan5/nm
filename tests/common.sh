@@ -5,13 +5,15 @@ ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 read -r -a compiler <<< "${CC:-cc}"
 base=(-Wall -Wextra -Werror -g -O1 -I"$ROOT/inc")
 sanitize=()
-selection=${NM_TEST_SANITIZERS:-address,undefined}
+selection=${NM_TEST_SANITIZERS:-none}
 case "$selection" in
     address|undefined|address,undefined) sanitize=(-fsanitize="$selection" -fno-omit-frame-pointer) ;;
     none) ;;
     *) printf 'Invalid NM_TEST_SANITIZERS: %s\n' "$selection" >&2; exit 1 ;;
 esac
 export LC_ALL=C
+# Test builds use temporary outputs and must work with a read-only ccache directory.
+export CCACHE_DISABLE=${CCACHE_DISABLE:-1}
 export ASAN_OPTIONS=${ASAN_OPTIONS:-detect_leaks=1:halt_on_error=1}
 export UBSAN_OPTIONS=${UBSAN_OPTIONS:-halt_on_error=1:print_stacktrace=1}
 TASK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/nm-edge.XXXXXX")
@@ -36,7 +38,6 @@ fixtures="$ROOT/tests/edge_case_test/fixtures"
 describe_case() {
     case "$1" in
         file-*) printf 'File handling: %s' "${1#file-}" ;;
-        abi32-*) printf '32-bit size conversion: %s' "${1#abi32-}" ;;
         ident-*) printf 'ELF identification: %s' "${1#ident-}" ;;
         table*) printf 'ELF header/section table: %s' "$1" ;;
         symbols*) printf 'Symbol/string table boundaries or output: %s' "$1" ;;

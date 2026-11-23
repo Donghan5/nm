@@ -2,7 +2,6 @@
 # Display actual commands, symbol output, diagnostics and exit statuses.
 set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-read -r -a compiler <<< "${CC:-cc}"
 export LC_ALL=C
 sandbox=$(mktemp -d "${TMPDIR:-/tmp}/nm-demo.XXXXXX")
 trap 'rm -rf -- "$sandbox"' EXIT
@@ -14,8 +13,8 @@ show() {
     "$@" || code=$?
     printf '[exit %s]\n' "$code"
 }
-"${compiler[@]}" -m64 -c "$ROOT/tests/eval_test/symbols.s" -o "$sandbox/example64.o"
-"${compiler[@]}" -m32 -c "$ROOT/tests/eval_test/symbols.s" -o "$sandbox/example32.o"
+"${AS:-as}" --64 "$ROOT/tests/eval_test/symbols.s" -o "$sandbox/example64.o"
+"${AS:-as}" --32 "$ROOT/tests/eval_test/symbols.s" -o "$sandbox/example32.o"
 printf '\n=== Default symbol output: compare GNU nm and ft_nm ===\n'
 show nm "$sandbox/example64.o"
 show "$ROOT/ft_nm" "$sandbox/example64.o"

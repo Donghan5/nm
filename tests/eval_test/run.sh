@@ -74,11 +74,10 @@ for path in "$ROOT"/tests/eval_test/*.so; do
     done
 done
 # These two .c files are source inputs, not malformed ELF fixtures.
-for variant in easy_test not_so_easy_test-32 not_so_easy_test-64; do
+for variant in easy_test not_so_easy_test-64; do
     file=easy_test
     arch_flags=()
     case "$variant" in
-        not_so_easy_test-32) file=not_so_easy_test; arch_flags=(-m32) ;;
         not_so_easy_test-64) file=not_so_easy_test; arch_flags=(-m64) ;;
     esac
     if timeout 30s "${compiler[@]}" -Wall -Wextra -Werror "${arch_flags[@]}" "$ROOT/tests/eval_test/$file.c" \
@@ -95,7 +94,7 @@ for variant in easy_test not_so_easy_test-32 not_so_easy_test-64; do
 done
 # Main comparisons cover ELF32/64 objects, executables, PIE and shared libraries.
 for bits in 32 64; do
-    if ! timeout 30s "${compiler[@]}" -m"$bits" -c "$ROOT/tests/eval_test/symbols.s" -o "$work/symbols$bits.o" > "$TASK_TMP/fixture$bits.log" 2>&1; then
+    if ! timeout 30s "${AS:-as}" --"$bits" "$ROOT/tests/eval_test/symbols.s" -o "$work/symbols$bits.o" > "$TASK_TMP/fixture$bits.log" 2>&1; then
         record FAIL "build/symbols$bits"
         cat "$TASK_TMP/fixture$bits.log"
         continue

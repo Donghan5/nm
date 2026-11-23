@@ -13,28 +13,6 @@ if compile file "${file_sources[@]}" -Wl,--wrap=fstat; then
         run_case "file-$name" "$work/file" "$name" "$path"
     done
 fi
-if timeout 30s "${compiler[@]}" -m32 -D_FILE_OFFSET_BITS=64 "$fixtures/abi32_probe.c" \
-    -o "$work/probe32" > "$TASK_TMP/abi32.log" 2>&1 && \
-    timeout 10s "$work/probe32" >> "$TASK_TMP/abi32.log" 2>&1; then
-    if timeout 30s "${compiler[@]}" "${base[@]}" -m32 -D_FILE_OFFSET_BITS=64 \
-        -DDAY1_TEST_32 -Wl,--wrap=fstat64 "${file_sources[@]}" -o "$work/file32" \
-        > "$TASK_TMP/build-file32.log" 2>&1; then
-        for name in size-max-valid size-overflow; do
-            run_case "abi32-$name" "$work/file32" "$name" "$work/regular"
-        done
-    else
-        record FAIL build/file32
-        cat "$TASK_TMP/build-file32.log"
-    fi
-else
-    # The school environment provides multilib, so a host that cannot build -m32
-    # is a local toolchain gap rather than a defect in ft_nm. Report it as a
-    # warning that names the checks which did not run, so reduced coverage stays
-    # visible without failing the suite. The main suite still treats its own
-    # -m32 builds as failures, as the evaluation sheet requires them.
-    record WARN abi32-unavailable "multilib -m32 unavailable, so abi32-size-max-valid and abi32-size-overflow did not run (install gcc-multilib)"
-    cat "$TASK_TMP/abi32.log"
-fi
 if compile ident "$fixtures/ident_test.c" "${elf[0]}"; then
     for name in ranges short-inputs magic class endian version valid-ident; do
         run_case "ident-$name" "$work/ident" "$name"

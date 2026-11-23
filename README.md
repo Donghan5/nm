@@ -170,9 +170,9 @@ Run these commands from the repository root:
 make demo             # Show commands, actual output and exit codes
 make demo32           # Show ELF32 file type, GNU nm and ft_nm output
 make test             # Main evaluation suite (same as make eval_test)
-make edge_case_test   # 75 edge checks, including 2 actual 32-bit ABI checks
+make edge_case_test   # 130 edge checks
 make lifetime_test    # 16 fd/mapping lifetime and failure-injection scenarios
-make eval_test        # 122 school, shared-library, format, CLI and option checks
+make eval_test        # 137 school, shared-library, format, CLI and option checks
 ```
 
 The evaluation suite compares supplied `tests/eval_test/*.so` files, including
@@ -180,14 +180,11 @@ The evaluation suite compares supplied `tests/eval_test/*.so` files, including
 It also covers school fixtures and generated ELF32/64 inputs.
 
 The test runners compile the current sources into temporary executables and
-use `LC_ALL=C` for GNU `nm` comparisons. ASan, UBSan, and LeakSanitizer are enabled
-by default, except for the two actual 32-bit ABI checks. Missing runtimes or ABI
-support affect which checks can run; a skipped check is not a pass.
+use `LC_ALL=C` for GNU `nm` comparisons. Sanitizers are optional and can be
+enabled with `NM_TEST_SANITIZERS=address,undefined` where the runtimes are available.
 
-`make demo` and `make demo32` display examples rather than run assertion suites.
-`make demo32` builds `build/demo32.o` with `-m32` and requires 32-bit libc
-development headers. On Ubuntu, install `libc6-dev-i386` and `gcc-multilib`.
-The main evaluation suite also needs these packages for its 32-bit C input.
+`make demo` and `make demo32` display example output.
+`make demo32` uses GNU `as --32` to build `build/demo32.o` without 32-bit libc.
 `make clean` removes `build/demo32.o`.
 
 See the [test guide](tests/README.md) for prerequisites, sanitizer settings,

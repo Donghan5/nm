@@ -5,12 +5,20 @@ Python is not required. Run from the repository root:
 
 ```sh
 make test            # Main suite; alias for eval_test
-make eval_test       # 140 school, shared-library, format, CLI and bonus checks
-make edge_case_test  # 132 edge checks
+make eval_test       # 137 school, shared-library, format, CLI and bonus checks
+make edge_case_test  # 130 edge checks
 make lifetime_test   # 16 failure-injection and resource-lifetime checks
 make test_all        # All three suites in one run
+make valgrind        # Memcheck on the ELF32 example and valid/malformed evaluation fixtures
 make proof           # Live differential scan of every ELF file on this host
 ```
+
+`make valgrind` checks the binary fixtures in `tests/eval_test`, the generated
+ELF32 object, and `ft_nm` itself. Valid inputs must exit 0 and malformed inputs
+must exit 1. Memcheck errors and reported definite, indirect, or possible leaks
+fail the target. The four truncated fixtures named `header`, `header_copy`,
+`header_and_prog`, and `header_and_prog_copy` run directly because Valgrind's
+debuginfo reader aborts when they are mapped.
 
 ## Live differential proof
 
@@ -45,10 +53,9 @@ Supplied `tests/eval_test/*.so` libraries (currently `libft_malloc.so`) are
 compared with GNU nm under default, `-r`, `-p`, `-rp`, `-pr`, `-rr`, `-pp`,
 `-r -p` and `-p -r`, requiring exact stdout, stderr and successful exit.
 
-The school easy_test.c is compiled with the compiler's default architecture.
-not_so_easy_test.c is compiled explicitly with -m32 and -m64, as required by the
-evaluation sheet. All three binaries are compared with GNU nm under default,
--r and -p; unavailable multilib support is a build failure, not a skipped pass.
+The school `easy_test.c` is compiled with the compiler's default architecture,
+and `not_so_easy_test.c` is compiled with `-m64`. Both binaries are compared
+with GNU nm under default, `-r` and `-p`.
 Generated ELF32/64 objects, executables, PIE and shared libraries
 are compared under default, `-r`, `-p`, `-rp`, `-pr`, `-rr`, `-pp`, `-r -p` and
 `-p -r`. Comparisons preserve output order, whitespace and address padding.
@@ -64,7 +71,7 @@ The generated assembly has no libc dependency, including when linked as ELF32.
 
 ## Edge and resource checks
 
-`edge_case_test` covers file/size boundaries, actual 32-bit size conversion,
+`edge_case_test` covers file/size boundaries,
 ELF identification, ELF header field validation, header/table truncation and
 offsets, program-header bounds, symbol/string bounds and reader contracts,
 extended indexes, section-name bounds and payload/NOTE/NOBITS policy.
@@ -89,35 +96,21 @@ mapping lifetime through classification and printing.
 
 ## Environment and logs
 
-Requires Bash, an x86 little-endian Linux host, C compiler, GNU nm/ld,
+Requires Bash, an x86 little-endian Linux host, a C compiler, GNU as/ld/nm,
 coreutils (timeout/cmp), sed, grep and /proc. libc must provide strlcpy.
-Multilib libc and kernel support for -m32 is needed by the actual 32-bit ABI
-boundary checks, the main evaluation's -m32 C build and the ELF32 fixtures. The
-generated input binaries are inspected, not executed. On Debian or Ubuntu,
-install `gcc-multilib`.
+GNU as and ld produce the ELF32 fixtures from assembly without multilib.
 
-No check is ever skipped: every `Result` line reads `0 SKIP`, so an absent skip
-is visible evidence rather than an absent line. A host without multilib is a
-local toolchain gap, not a defect in ft_nm, and is reported two ways. The two
-actual 32-bit ABI checks in `edge_case_test` emit `WARN`, which names both
-checks that did not run and leaves the exit status at 0. `eval_test` and
-`lifetime_test` still fail, because the evaluation sheet requires their -m32
-builds and a 32-bit fixture they cannot substitute. Warnings are never test
-results and never mask one; a check that can run either passes or fails.
-
-ASan, UBSan and LeakSanitizer are enabled by default; only the two actual 32-bit
-ABI checks omit sanitizers. A ptrace-restricted sandbox can prevent LSan from
-running. Run in a supported environment to complete leak coverage.
+Sanitizers are disabled by default. To enable them where their runtimes are
+available, run:
 
 ```sh
-NM_TEST_SANITIZERS=none make test
-ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 make test
+NM_TEST_SANITIZERS=address,undefined make test_all
 ```
 
-Disabling sanitizers or leak detection removes that coverage, and each runner
-says so on its first lines; it does not change any check's PASS/FAIL result.
-Each runner prints each test's subject and PASS/FAIL/WARN result directly to the
-terminal. Evaluation cases report the stdout/stderr/exit comparison or malformed
+If a ptrace-restricted sandbox prevents LeakSanitizer from running, set
+`ASAN_OPTIONS=detect_leaks=0:halt_on_error=1` to run without leak detection.
+Each runner prints the sanitizer selection, individual results, and totals.
+Evaluation cases report the stdout/stderr/exit comparison or malformed
 input rejection rule, including both exit codes. Resource cases report input
 count, injected fault, audit errors and peak mappings. Failures show diagnostics
 and evaluation output differences. Final counts remain as a short overview.
