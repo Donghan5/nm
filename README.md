@@ -7,7 +7,7 @@ its symbols, values, and type characters.
 The program is written in C and parses ELF data directly using `<elf.h>`.
 The current scope covers Linux x86 ELF32 and ELF64 object files, executables,
 and shared libraries, with the additional `-r` and `-p` options.
-The project subject is included in [nm.pdf](nm.pdf).
+The 42 project subject (version 4.0) is included in [nm.pdf](nm.pdf).
 
 ## Getting Started
 
@@ -28,6 +28,7 @@ Reading ELF32 input with the native executable does not require a 32-bit libc.
 | `make clean` | Remove object and dependency files |
 | `make fclean` | Also remove `ft_nm` |
 | `make re` | Remove build outputs and rebuild |
+| `make help` | List build, test, and demo targets |
 
 The compiler can be selected with `make CC=/usr/bin/gcc`.
 
@@ -83,8 +84,10 @@ The program exits with 0 when all files are processed successfully and 1 when
 an option or file fails. A file error does not prevent subsequent files from
 being processed. A valid input without a regular symbol table produces a
 `no symbols` diagnostic and exits successfully. Empty files exit with 1 without
-a diagnostic. Directories and FIFOs produce warnings and exit with 1. FIFO
-inputs are opened in nonblocking mode, so the program does not wait for a writer.
+a diagnostic. Directories get an `is a directory` warning. FIFOs and other
+non-regular inputs that can be opened get an `is not an ordinary file` warning.
+Both warnings are file failures. Inputs are opened in nonblocking mode so a
+FIFO with no writer can be rejected immediately.
 
 ## Project Structure
 
@@ -107,12 +110,15 @@ The project is organized into the following directories:
 └── tests/
     ├── common.sh                # Shared Bash test helpers
     ├── demo.sh                  # Live command and output demonstration
+    ├── proof.sh                 # Host-side comparison with GNU nm
     ├── README.md                # Detailed Bash test guide
     ├── edge_case_test/           # Core fixtures and regression runner
     │   ├── fixtures/
     │   └── lifetime/            # Failure injection and resource audit
     └── eval_test/               # School fixtures and comparison runner
-        └── libft_malloc.so      # Supplied shared-library test input
+        ├── libft_malloc.so      # Supplied shared-library test input
+        ├── symbols.s           # Source for generated ELF32/64 fixtures
+        └── valgrind.sh         # Memcheck and fixture exit-status checks
 ```
 
 Build artifacts are generated under `build/`, and the executable is generated
@@ -181,15 +187,35 @@ make proof            # Compare ft_nm and GNU nm on ELF files in system director
 
 The evaluation suite compares supplied `tests/eval_test/*.so` files, including
 `libft_malloc.so`, with GNU `nm` under default, `-r`, `-p` and combined options.
-It also covers school fixtures and generated ELF32/64 inputs.
+It also covers school fixtures and generated ELF32/64 objects, executables,
+PIE, shared libraries, and stripped binaries. GNU `as` and `ld` generate
+ELF32 fixtures from assembly without a multilib toolchain.
 
-The test runners compile the current sources into temporary executables and
-use `LC_ALL=C` for GNU `nm` comparisons. Sanitizers are optional and can be
-enabled with `NM_TEST_SANITIZERS=address,undefined` where the runtimes are available.
+The evaluation, edge-case, and lifetime suites require Bash, GNU binutils,
+and Linux tools including `timeout` and `cmp`. The lifetime suite uses
+`/proc` to audit file descriptors and mappings. These runners compile the
+current sources into temporary executables and use `LC_ALL=C` for GNU `nm`
+comparisons. Sanitizers are off by default, and leaving them off produces
+no skip notices. Set `NM_TEST_SANITIZERS=address,undefined` to enable both
+where the runtimes are available.
 
 `make demo` and `make demo32` display example output.
-`make demo32` uses GNU `as --32` to build `build/demo32.o` without 32-bit libc.
+`make demo32` uses GNU `as --32` to build `build/demo32.o` and `file` to
+display its format before showing the two programs' output.
 `make clean` removes `build/demo32.o`.
+
+`make valgrind` runs Memcheck on `ft_nm` itself, `build/demo32.o`, and
+evaluation fixtures. It checks the expected exit status for each input and
+fails on Memcheck errors or definite, indirect, or possible leaks. The four
+truncated fixtures `header`, `header_copy`, `header_and_prog`, and
+`header_and_prog_copy` get direct exit-status checks because Valgrind's
+debuginfo reader aborts when mapping them.
+
+`make proof` scans regular files directly inside selected system binary and
+library directories. It uses `file` to select candidates when available and
+compares stdout, stderr after normalizing the program name, and exit status
+against GNU `nm`. It retries disagreements once and reports mismatches,
+crashes, timeouts, and inconsistent results. Coverage depends on the host.
 
 See the [test guide](tests/README.md) for prerequisites, sanitizer settings,
 coverage, exit codes, and the separate acceptance policy for malformed school
